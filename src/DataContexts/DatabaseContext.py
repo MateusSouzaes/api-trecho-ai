@@ -11,6 +11,7 @@ from jose import jwt
 
 from src.core.config import settings
 from src.Models.Usuario import Usuario
+import src.Models  # Garante o registro de metadados de todas as tabelas
 
 logger = logging.getLogger(__name__)
 
@@ -41,22 +42,19 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 async def get_tenant_session(transportadora_id: UUID) -> AsyncGenerator[AsyncSession, None]:
-    """Comuta dinamicamente o search_path para o schema do tenant."""
+    """Retorna uma sessão padrão no modelo Single-Schema."""
     async with async_session_maker() as session:
         try:
-            schema_name = f"tenant_{str(transportadora_id).replace('-', '_')}"
-            await session.execute(text(f"SET search_path TO {schema_name}"))
             yield session
-        except Exception as e:
-            logger.error(f"Erro ao comutar Tenant {transportadora_id}: {e}")
-            raise
         finally:
             await session.close()
 
 async def init_db() -> None:
     """Cria as extensões e tabelas base no startup da API."""
     async with engine.begin() as conn:
-        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+        await conn.execute(text('CREATE SCHEMA IF NOT EXISTS auth;'))
+        await conn.execute(text('CREATE SCHEMA IF NOT EXISTS public;'))
+        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
         await conn.run_sync(SQLModel.metadata.create_all)
         logger.info("✅ Banco de dados inicializado com sucesso")
 

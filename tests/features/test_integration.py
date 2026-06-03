@@ -12,8 +12,8 @@ auth_service.register_new_tenant = AsyncMock()
 auth_service.authenticate_user = AsyncMock()
 
 import src.Services.FrotaService as frota_service
-frota_service.create_veiculo = AsyncMock()
-frota_service.get_veiculos = AsyncMock()
+frota_service.create_cavalo = AsyncMock()
+frota_service.get_cavalos = AsyncMock()
 
 import src.Services.PessoasService as pessoas_service
 pessoas_service.create_motorista = AsyncMock()
@@ -27,10 +27,11 @@ viagens_service.launch_despesa = AsyncMock()
 from src.main import app
 from src.DataContexts.DatabaseContext import get_current_user, get_current_tenant_session, get_session
 from src.Models.Usuario import Usuario
-from src.Models.Veiculo import Veiculo
+from src.Models.Cavalo import Cavalo
 from src.Dtos.MotoristaDto import MotoristaResponse
 from src.Models.Viagem import Viagem
 from src.Models.DespesaViagem import DespesaViagem
+from src.Models.ReceitaViagem import ReceitaViagem
 from src.Models.MensagemChat import MensagemChat
 
 from fastapi.testclient import TestClient
@@ -61,8 +62,8 @@ def override_dependencies():
     # Reset all service mocks before each test
     auth_service.register_new_tenant.reset_mock()
     auth_service.authenticate_user.reset_mock()
-    frota_service.create_veiculo.reset_mock()
-    frota_service.get_veiculos.reset_mock()
+    frota_service.create_cavalo.reset_mock()
+    frota_service.get_cavalos.reset_mock()
     pessoas_service.create_motorista.reset_mock()
     pessoas_service.get_motorista_joined.reset_mock()
     viagens_service.create_viagem.reset_mock()
@@ -139,26 +140,34 @@ def test_auth_me_authenticated():
 
 def test_create_veiculo():
     mock_veh_id = uuid4()
-    frota_service.create_veiculo.return_value = Veiculo(
+    frota_service.create_cavalo.return_value = Cavalo(
         id=mock_veh_id,
+        transportadora_id=mock_tenant_id,
         placa="ABC1D23",
+        renavam="1234567890",
+        chassi="987654321",
         modelo="Constellation",
         marca="Volkswagen",
-        ano_modelo=2022,
-        capacidade_toneladas=Decimal("23.50"),
-        status="ATIVA",
-        consumo_medio_kml=Decimal("3.20")
+        quantidade_eixos=3,
+        tipo_rodado="6x2",
+        tara_kg=Decimal("8500.0"),
+        hodometro_atual=1000,
+        frota_propria=True,
+        status_veiculo="DISPONIVEL"
     )
 
     payload = {
         "placa": "ABC1D23",
+        "renavam": "1234567890",
+        "chassi": "987654321",
         "modelo": "Constellation",
         "marca": "Volkswagen",
-        "ano_modelo": 2022,
-        "capacidade_toneladas": 23.50,
-        "status": "ATIVA",
-        "consumo_medio_kml": 3.20,
-        "codigo_fipe": "123456"
+        "quantidade_eixos": 3,
+        "tipo_rodado": "6x2",
+        "tara_kg": 8500.0,
+        "hodometro_atual": 1000,
+        "frota_propria": True,
+        "status_veiculo": "DISPONIVEL"
     }
 
     response = client.post("/frota/caminhoes", json=payload, headers={"Authorization": "Bearer fake-jwt-token"})
@@ -167,16 +176,21 @@ def test_create_veiculo():
     assert response.json()["marca"] == "Volkswagen"
 
 def test_get_veiculos():
-    frota_service.get_veiculos.return_value = [
-        Veiculo(
+    frota_service.get_cavalos.return_value = [
+        Cavalo(
             id=uuid4(),
+            transportadora_id=mock_tenant_id,
             placa="ABC1D23",
+            renavam="1234567890",
+            chassi="987654321",
             modelo="Constellation",
             marca="Volkswagen",
-            ano_modelo=2022,
-            capacidade_toneladas=Decimal("23.5"),
-            status="ATIVA",
-            consumo_medio_kml=Decimal("3.2")
+            quantidade_eixos=3,
+            tipo_rodado="6x2",
+            tara_kg=Decimal("8500.0"),
+            hodometro_atual=1000,
+            frota_propria=True,
+            status_veiculo="DISPONIVEL"
         )
     ]
 
@@ -200,7 +214,8 @@ def test_create_motorista():
         cnh_numero="99999999",
         cnh_categoria="D",
         cnh_validade=datetime(2030, 5, 10, tzinfo=timezone.utc),
-        status="ATIVA"
+        cnh_pontos=0,
+        status_operacional="DISPONIVEL"
     )
 
     payload = {
@@ -213,7 +228,7 @@ def test_create_motorista():
         "cnh_numero": "99999999",
         "cnh_categoria": "D",
         "cnh_validade": "2030-05-10T00:00:00Z",
-        "status": "ATIVA"
+        "status_operacional": "DISPONIVEL"
     }
 
     response = client.post("/pessoas/motoristas", json=payload, headers={"Authorization": "Bearer fake-jwt-token"})
@@ -227,34 +242,37 @@ def test_create_viagem():
     mock_trip_id = uuid4()
     mock_veh_id = uuid4()
     mock_mot_id = uuid4()
+    mock_addr_orig = uuid4()
+    mock_addr_dest = uuid4()
     
     viagens_service.create_viagem.return_value = Viagem(
         id=mock_trip_id,
-        veiculo_id=mock_veh_id,
+        transportadora_id=mock_tenant_id,
+        cavalo_id=mock_veh_id,
         motorista_id=mock_mot_id,
-        origem_cidade="São Paulo",
-        destino_cidade="Curitiba",
-        km_inicial=Decimal("100.00"),
-        valor_frete=Decimal("1500.00"),
-        status="ATIVA",
-        data_partida=datetime(2026, 6, 2, tzinfo=timezone.utc)
+        endereco_origem_id=mock_addr_orig,
+        endereco_destino_id=mock_addr_dest,
+        hodometro_inicial=1000,
+        status_operacional="PLANEJADA",
+        status_financeiro="PENDENTE",
+        data_inicio=datetime(2026, 6, 2, tzinfo=timezone.utc)
     )
 
     payload = {
-        "veiculo_id": str(mock_veh_id),
+        "cavalo_id": str(mock_veh_id),
         "motorista_id": str(mock_mot_id),
-        "origem_cidade": "São Paulo",
-        "destino_cidade": "Curitiba",
-        "km_inicial": 100.00,
-        "valor_frete": 1500.00,
-        "status": "ATIVA",
-        "data_partida": "2026-06-02T12:00:00Z"
+        "endereco_origem_id": str(mock_addr_orig),
+        "endereco_destino_id": str(mock_addr_dest),
+        "hodometro_inicial": 1000,
+        "status_operacional": "PLANEJADA",
+        "status_financeiro": "PENDENTE",
+        "data_inicio": "2026-06-02T12:00:00Z"
     }
 
     response = client.post("/viagens", json=payload, headers={"Authorization": "Bearer fake-jwt-token"})
     assert response.status_code == 201
-    assert response.json()["origem_cidade"] == "São Paulo"
-    assert float(response.json()["valor_frete"]) == 1500.00
+    assert response.json()["endereco_origem_id"] == str(mock_addr_orig)
+    assert response.json()["hodometro_inicial"] == 1000
 
 # --- EXPENSES (DESPESAS) TESTS ---
 
@@ -264,21 +282,24 @@ def test_launch_despesa():
     
     viagens_service.launch_despesa.return_value = DespesaViagem(
         id=mock_exp_id,
+        transportadora_id=mock_tenant_id,
         viagem_id=mock_trip_id,
-        tipo_despesa="COMBUSTIVEL",
+        categoria="COMBUSTIVEL",
         valor=Decimal("500.00"),
-        descricao="Posto Graal"
+        data_despesa=datetime(2026, 6, 2, tzinfo=timezone.utc),
+        url_comprovante="http://receipts.com/1"
     )
 
     payload = {
-        "tipo_despesa": "COMBUSTIVEL",
+        "categoria": "COMBUSTIVEL",
         "valor": 500.00,
-        "descricao": "Posto Graal"
+        "data_despesa": "2026-06-02T12:00:00Z",
+        "url_comprovante": "http://receipts.com/1"
     }
 
     response = client.post(f"/viagens/{mock_trip_id}/despesas", json=payload, headers={"Authorization": "Bearer fake-jwt-token"})
     assert response.status_code == 201
-    assert response.json()["tipo_despesa"] == "COMBUSTIVEL"
+    assert response.json()["categoria"] == "COMBUSTIVEL"
     assert float(response.json()["valor"]) == 500.00
 
 # --- DASHBOARD TESTS ---
@@ -290,22 +311,35 @@ def test_dashboard_lucratividade():
     
     mock_viagem = Viagem(
         id=mock_trip_id,
-        veiculo_id=mock_veh_id,
+        transportadora_id=mock_tenant_id,
+        cavalo_id=mock_veh_id,
         motorista_id=mock_mot_id,
-        origem_cidade="São Paulo",
-        destino_cidade="Curitiba",
-        km_inicial=Decimal("100.00"),
-        valor_frete=Decimal("1500.00"),
-        status="ATIVA",
-        data_partida=datetime(2026, 6, 2, tzinfo=timezone.utc)
+        endereco_origem_id=uuid4(),
+        endereco_destino_id=uuid4(),
+        hodometro_inicial=1000,
+        status_operacional="PLANEJADA",
+        status_financeiro="PENDENTE",
+        data_inicio=datetime(2026, 6, 2, tzinfo=timezone.utc)
+    )
+
+    mock_receita = ReceitaViagem(
+        id=uuid4(),
+        transportadora_id=mock_tenant_id,
+        viagem_id=mock_trip_id,
+        cliente_pessoa_id=uuid4(),
+        tipo_receita="FRETE_VALOR",
+        valor=Decimal("1500.00"),
+        status_pagamento="A_RECEBER"
     )
 
     mock_despesa = DespesaViagem(
         id=uuid4(),
+        transportadora_id=mock_tenant_id,
         viagem_id=mock_trip_id,
-        tipo_despesa="COMBUSTIVEL",
+        categoria="COMBUSTIVEL",
         valor=Decimal("500.00"),
-        descricao="Diesel"
+        data_despesa=datetime(2026, 6, 2, tzinfo=timezone.utc),
+        url_comprovante="http://receipts.com/1"
     )
 
     # Mocking database query executions for get_lucratividade_dashboard
@@ -313,12 +347,16 @@ def test_dashboard_lucratividade():
     mock_res_viagens = MagicMock()
     mock_res_viagens.scalars.return_value.all.return_value = [mock_viagem]
 
-    # 2nd execution resolves to despesas query result
+    # 2nd execution resolves to receitas query result
+    mock_res_receitas = MagicMock()
+    mock_res_receitas.scalars.return_value.all.return_value = [mock_receita]
+
+    # 3rd execution resolves to despesas query result
     mock_res_despesas = MagicMock()
     mock_res_despesas.scalars.return_value.all.return_value = [mock_despesa]
 
     # Configure side effect for execute
-    mock_session.execute.side_effect = [mock_res_viagens, mock_res_despesas]
+    mock_session.execute.side_effect = [mock_res_viagens, mock_res_receitas, mock_res_despesas]
 
     response = client.get("/dashboard/lucratividade", headers={"Authorization": "Bearer fake-jwt-token"})
     assert response.status_code == 200
@@ -338,6 +376,7 @@ def test_whatsapp_rodovia_assistant():
     mock_msg_id = uuid4()
     mock_msg = MensagemChat(
         id=mock_msg_id,
+        transportadora_id=mock_tenant_id,
         motorista_id=mock_mot_id,
         conteudo="Mensagem teste",
         remetente="OPERADOR",

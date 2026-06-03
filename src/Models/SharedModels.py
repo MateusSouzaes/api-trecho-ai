@@ -3,9 +3,9 @@ from datetime import datetime
 from typing import Optional
 from decimal import Decimal
 from sqlmodel import Field, SQLModel
-from src.Models.base_models import UUIDMixin, TimestampMixin
+from src.Models.base_models import UUIDMixin
 
-class Endereco(UUIDMixin, TimestampMixin, table=True):
+class Endereco(UUIDMixin, table=True):
     __tablename__ = "endereco"
     __table_args__ = {"schema": "public"}
 
@@ -20,7 +20,7 @@ class Endereco(UUIDMixin, TimestampMixin, table=True):
     latitude: Optional[Decimal] = Field(default=None, max_digits=10, decimal_places=8)
     longitude: Optional[Decimal] = Field(default=None, max_digits=11, decimal_places=8)
 
-class Pessoa(UUIDMixin, TimestampMixin, table=True):
+class Pessoa(UUIDMixin, table=True):
     __tablename__ = "pessoa"
     __table_args__ = {"schema": "public"}
 
@@ -28,6 +28,7 @@ class Pessoa(UUIDMixin, TimestampMixin, table=True):
     nome_razao_social: str = Field(max_length=255, nullable=False)
     telefone: Optional[str] = Field(default=None, max_length=20)
     email: Optional[str] = Field(default=None, max_length=255)
+    data_cadastro: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     
     endereco_id: Optional[uuid.UUID] = Field(default=None, foreign_key="public.endereco.id")
 
@@ -49,7 +50,7 @@ class PessoaFisica(SQLModel, table=True):
     rg: Optional[str] = Field(default=None, max_length=20)
     data_nascimento: Optional[datetime] = Field(default=None)
 
-class Transportadora(UUIDMixin, TimestampMixin, table=True):
+class Transportadora(UUIDMixin, table=True):
     __tablename__ = "transportadora"
     __table_args__ = {"schema": "public"}
 

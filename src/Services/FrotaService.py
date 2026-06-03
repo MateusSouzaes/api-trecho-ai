@@ -6,95 +6,173 @@ from sqlmodel import select
 from fastapi import HTTPException, status
 
 from src.Services.ApiClients import fetch_fipe_by_code
-from src.Models.Veiculo import Veiculo
-from src.Dtos.VeiculoDto import VeiculoCreate, VeiculoUpdate
+from src.Models.Cavalo import Cavalo
+from src.Models.Implemento import Implemento
+from src.Dtos.FrotaDto import CavaloCreate, CavaloUpdate, ImplementoCreate, ImplementoUpdate
 
 logger = logging.getLogger(__name__)
 
-async def check_placa_exists(session: AsyncSession, placa: str) -> bool:
-    """Verifica se já existe um veículo cadastrado com a placa informada no tenant atual."""
-    query = select(Veiculo).where(Veiculo.placa == placa.upper())
+# --- CAVALO SERVICES ---
+
+async def check_cavalo_placa_exists(session: AsyncSession, placa: str, transportadora_id: UUID) -> bool:
+    """Verifica se já existe um cavalo cadastrado com a placa informada."""
+    query = select(Cavalo).where(
+        Cavalo.placa == placa.upper(),
+        Cavalo.transportadora_id == transportadora_id
+    )
     result = await session.execute(query)
     return result.scalar_one_or_none() is not None
 
-async def create_veiculo(session: AsyncSession, data: VeiculoCreate) -> Veiculo:
-    """
-    Cria um novo veículo. Se o código FIPE for fornecido, realiza a consulta
-    real e preenche/substitui marca e modelo com dados oficiais se encontrados.
-    """
-    # 1. Verificar duplicidade de placa
-    if await check_placa_exists(session, data.placa):
+async def create_cavalo(session: AsyncSession, data: CavaloCreate, transportadora_id: UUID) -> Cavalo:
+    """Cria um novo cavalo no banco."""
+    if await check_cavalo_placa_exists(session, data.placa, transportadora_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Veículo com placa {data.placa} já cadastrado."
+            detail=f"Cavalo com placa {data.placa} já cadastrado."
         )
 
     marca = data.marca
     modelo = data.modelo
-    ano_modelo = data.ano_modelo
-
-    # 2. Consultar FIPE se fornecido
-    if data.codigo_fipe:
-        fipe_data = await fetch_fipe_by_code(data.codigo_fipe)
-        if fipe_data:
-            logger.info(f"Dados FIPE carregados para {data.codigo_fipe}: {fipe_data}")
-            marca = fipe_data.get("brand", data.marca)
-            modelo = fipe_data.get("model", data.modelo)
-            # Extrair ano numérico da FIPE se possível, ex: "2010 Gasolina" -> 2010
-            fipe_year = fipe_data.get("modelYear")
-            if fipe_year:
-                ano_modelo = int(fipe_year)
-        else:
-            logger.warning(f"Código FIPE {data.codigo_fipe} não retornou resultados na consulta real.")
 
     # 3. Salvar
-    veiculo = Veiculo(
+    cavalo = Cavalo(
+        transportadora_id=transportadora_id,
         placa=data.placa.upper(),
-        modelo=modelo,
+        renavam=data.renavam,
+        chassi=data.chassi,
         marca=marca,
-        ano_modelo=ano_modelo,
-        capacidade_toneladas=data.capacidade_toneladas,
-        status=data.status,
-        consumo_medio_kml=data.consumo_medio_kml
+        modelo=modelo,
+        quantidade_eixos=data.quantidade_eixos,
+        tipo_rodado=data.tipo_rodado,
+        tara_kg=data.tara_kg,
+        hodometro_atual=data.hodometro_atual,
+        frota_propria=data.frota_propria,
+        proprietario_pessoa_id=data.proprietario_pessoa_id,
+        status_veiculo=data.status_veiculo or "DISPONIVEL"
     )
-    session.add(veiculo)
+    session.add(cavalo)
     await session.commit()
-    await session.refresh(veiculo)
-    return veiculo
+    await session.refresh(cavalo)
+    return cavalo
 
-async def get_veiculos(session: AsyncSession) -> List[Veiculo]:
-    """Retorna a lista de todos os veículos cadastrados no tenant."""
-    query = select(Veiculo)
+async def get_cavalos(session: AsyncSession, transportadora_id: UUID) -> List[Cavalo]:
+    """Retorna a lista de todos os cavalos cadastrados da transportadora."""
+    query = select(Cavalo).where(Cavalo.transportadora_id == transportadora_id)
     result = await session.execute(query)
     return list(result.scalars().all())
 
-async def get_veiculo_by_id(session: AsyncSession, veiculo_id: UUID) -> Veiculo:
-    """Busca um veículo pelo ID. Levanta 404 se não encontrado."""
-    query = select(Veiculo).where(Veiculo.id == veiculo_id)
+async def get_cavalo_by_id(session: AsyncSession, cavalo_id: UUID, transportadora_id: UUID) -> Cavalo:
+    """Busca um cavalo pelo ID. Levanta 404 se não encontrado."""
+    query = select(Cavalo).where(
+        Cavalo.id == cavalo_id,
+        Cavalo.transportadora_id == transportadora_id
+    )
     result = await session.execute(query)
-    veiculo = result.scalar_one_or_none()
-    if not veiculo:
+    cavalo = result.scalar_one_or_none()
+    if not cavalo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Veículo não encontrado."
+            detail="Cavalo mecânico não encontrado."
         )
-    return veiculo
+    return cavalo
 
-async def update_veiculo(session: AsyncSession, veiculo_id: UUID, data: VeiculoUpdate) -> Veiculo:
-    """Atualiza dados cadastrais de um veículo."""
-    veiculo = await get_veiculo_by_id(session, veiculo_id)
+async def update_cavalo(session: AsyncSession, cavalo_id: UUID, data: CavaloUpdate, transportadora_id: UUID) -> Cavalo:
+    """Atualiza dados cadastrais de um cavalo."""
+    cavalo = await get_cavalo_by_id(session, cavalo_id, transportadora_id)
     
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        setattr(veiculo, key, value)
+        setattr(cavalo, key, value)
         
-    session.add(veiculo)
+    session.add(cavalo)
     await session.commit()
-    await session.refresh(veiculo)
-    return veiculo
+    await session.refresh(cavalo)
+    return cavalo
 
-async def delete_veiculo(session: AsyncSession, veiculo_id: UUID) -> None:
-    """Exclui um veículo do cadastro."""
-    veiculo = await get_veiculo_by_id(session, veiculo_id)
-    await session.delete(veiculo)
+async def delete_cavalo(session: AsyncSession, cavalo_id: UUID, transportadora_id: UUID) -> None:
+    """Exclui um cavalo do cadastro."""
+    cavalo = await get_cavalo_by_id(session, cavalo_id, transportadora_id)
+    await session.delete(cavalo)
+    await session.commit()
+
+
+# --- IMPLEMENTO SERVICES ---
+
+async def check_implemento_placa_exists(session: AsyncSession, placa: str, transportadora_id: UUID) -> bool:
+    """Verifica se já existe um implemento cadastrado com a placa informada."""
+    query = select(Implemento).where(
+        Implemento.placa == placa.upper(),
+        Implemento.transportadora_id == transportadora_id
+    )
+    result = await session.execute(query)
+    return result.scalar_one_or_none() is not None
+
+async def create_implemento(session: AsyncSession, data: ImplementoCreate, transportadora_id: UUID) -> Implemento:
+    """Cria um novo implemento no banco."""
+    if await check_implemento_placa_exists(session, data.placa, transportadora_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Implemento com placa {data.placa} já cadastrado."
+        )
+
+    # Salvar
+    implemento = Implemento(
+        transportadora_id=transportadora_id,
+        placa=data.placa.upper(),
+        renavam=data.renavam,
+        chassi=data.chassi,
+        tipo_implemento=data.tipo_implemento,
+        tipo_carroceria=data.tipo_carroceria,
+        quantidade_eixos=data.quantidade_eixos,
+        tara_kg=data.tara_kg,
+        capacidade_carga_kg=data.capacidade_carga_kg,
+        cubagem_m3=data.cubagem_m3,
+        quilometragem_acumulada=data.quilometragem_acumulada,
+        frota_propria=data.frota_propria,
+        proprietario_pessoa_id=data.proprietario_pessoa_id,
+        status_veiculo=data.status_veiculo or "DISPONIVEL"
+    )
+    session.add(implemento)
+    await session.commit()
+    await session.refresh(implemento)
+    return implemento
+
+async def get_implementos(session: AsyncSession, transportadora_id: UUID) -> List[Implemento]:
+    """Retorna a lista de todos os implementos cadastrados da transportadora."""
+    query = select(Implemento).where(Implemento.transportadora_id == transportadora_id)
+    result = await session.execute(query)
+    return list(result.scalars().all())
+
+async def get_implemento_by_id(session: AsyncSession, implemento_id: UUID, transportadora_id: UUID) -> Implemento:
+    """Busca um implemento pelo ID. Levanta 404 se não encontrado."""
+    query = select(Implemento).where(
+        Implemento.id == implemento_id,
+        Implemento.transportadora_id == transportadora_id
+    )
+    result = await session.execute(query)
+    implemento = result.scalar_one_or_none()
+    if not implemento:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Implemento não encontrado."
+        )
+    return implemento
+
+async def update_implemento(session: AsyncSession, implemento_id: UUID, data: ImplementoUpdate, transportadora_id: UUID) -> Implemento:
+    """Atualiza dados cadastrais de um implemento."""
+    implemento = await get_implemento_by_id(session, implemento_id, transportadora_id)
+    
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(implemento, key, value)
+        
+    session.add(implemento)
+    await session.commit()
+    await session.refresh(implemento)
+    return implemento
+
+async def delete_implemento(session: AsyncSession, implemento_id: UUID, transportadora_id: UUID) -> None:
+    """Exclui um implemento do cadastro."""
+    implemento = await get_implemento_by_id(session, implemento_id, transportadora_id)
+    await session.delete(implemento)
     await session.commit()

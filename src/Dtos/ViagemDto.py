@@ -5,48 +5,72 @@ from datetime import datetime
 from uuid import UUID
 
 class ViagemCreate(BaseModel):
-    veiculo_id: UUID
     motorista_id: UUID
-    origem_cidade: str = Field(..., max_length=255)
-    destino_cidade: str = Field(..., max_length=255)
-    km_inicial: Decimal = Field(..., gt=0, max_digits=10, decimal_places=2)
-    valor_frete: Decimal = Field(..., gt=0, max_digits=15, decimal_places=2)
-    status: Optional[str] = Field("ATIVA", max_length=20)
-    data_partida: datetime
+    cavalo_id: UUID
+    endereco_origem_id: UUID
+    endereco_destino_id: UUID
+    data_inicio: datetime
+    hodometro_inicial: int = Field(..., ge=0)
+    status_operacional: Optional[str] = Field("PLANEJADA", max_length=30)
+    status_financeiro: Optional[str] = Field("PENDENTE", max_length=30)
 
 class ViagemUpdate(BaseModel):
-    km_final: Optional[Decimal] = Field(None, gt=0, max_digits=10, decimal_places=2)
-    status: Optional[str] = Field(None, max_length=20)
-    data_chegada: Optional[datetime] = None
+    data_fim: Optional[datetime] = None
+    hodometro_final: Optional[int] = Field(None, ge=0)
+    status_operacional: Optional[str] = Field(None, max_length=30)
+    status_financeiro: Optional[str] = Field(None, max_length=30)
 
 class ViagemResponse(BaseModel):
     id: UUID
-    veiculo_id: UUID
+    transportadora_id: UUID
+    codigo_viagem: Optional[int]
     motorista_id: UUID
-    origem_cidade: str
-    destino_cidade: str
-    km_inicial: Decimal
-    km_final: Optional[Decimal]
-    valor_frete: Decimal
-    status: str
-    data_partida: datetime
-    data_chegada: Optional[datetime]
+    cavalo_id: UUID
+    endereco_origem_id: UUID
+    endereco_destino_id: UUID
+    data_inicio: datetime
+    data_fim: Optional[datetime]
+    hodometro_inicial: int
+    hodometro_final: Optional[int]
+    total_km_rodado: Optional[int]
+    status_operacional: str
+    status_financeiro: str
 
     class Config:
         from_attributes = True
 
 class DespesaCreate(BaseModel):
-    tipo_despesa: str = Field(..., max_length=50)
-    valor: Decimal = Field(..., gt=0, max_digits=15, decimal_places=2)
-    descricao: Optional[str] = Field(None, max_length=255)
+    categoria: str = Field(..., max_length=50) # e.g. 'COMBUSTIVEL', 'PEDAGIO', etc.
+    valor: Decimal = Field(..., gt=0, max_digits=10, decimal_places=2)
+    data_despesa: datetime
+    url_comprovante: Optional[str] = Field(None, max_length=500)
 
 class DespesaResponse(BaseModel):
     id: UUID
+    transportadora_id: UUID
     viagem_id: UUID
-    tipo_despesa: str
+    categoria: str
     valor: Decimal
-    descricao: Optional[str]
-    data_lancamento: datetime
+    data_despesa: datetime
+    url_comprovante: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+class ReceitaCreate(BaseModel):
+    cliente_pessoa_id: UUID
+    tipo_receita: str = Field(..., max_length=50) # e.g. 'FRETE_VALOR', 'PEDAGIO_REEMBOLSO'
+    valor: Decimal = Field(..., gt=0, max_digits=10, decimal_places=2)
+    status_pagamento: Optional[str] = Field("A_RECEBER", max_length=30)
+
+class ReceitaResponse(BaseModel):
+    id: UUID
+    transportadora_id: UUID
+    viagem_id: UUID
+    cliente_pessoa_id: UUID
+    tipo_receita: str
+    valor: Decimal
+    status_pagamento: str
 
     class Config:
         from_attributes = True

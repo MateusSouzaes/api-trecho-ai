@@ -1,32 +1,38 @@
 from decimal import Decimal
 from typing import List
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from src.Models.Viagem import Viagem
 from src.Models.DespesaViagem import DespesaViagem
+from src.Models.ReceitaViagem import ReceitaViagem
 from src.Dtos.DashboardDto import DashboardResponse, AlertaDashboard
 
-async def get_lucratividade_dashboard(session: AsyncSession) -> DashboardResponse:
+async def get_lucratividade_dashboard(session: AsyncSession, transportadora_id: UUID) -> DashboardResponse:
     """
     Retorna consolidados financeiros de FinOps (Receitas, Despesas, Margens)
     e gera alertas operacionais de viagens de baixo rendimento ou prejuízo.
     """
-    # 1. Total de viagens e Receita Bruta (fretes)
-    query_viagens = select(Viagem)
+    # 1. Buscar viagens
+    query_viagens = select(Viagem).where(Viagem.transportadora_id == transportadora_id)
     res_viagens = await session.execute(query_viagens)
     viagens = list(res_viagens.scalars().all())
-    
-    total_receita = sum(v.valor_frete for v in viagens) if viagens else Decimal("0.00")
     total_viagens = len(viagens)
 
-    # 2. Total de Despesas
-    query_despesas = select(DespesaViagem)
+    # 2. Buscar e somar receitas (faturamento/frete)
+    query_receitas = select(ReceitaViagem).where(ReceitaViagem.transportadora_id == transportadora_id)
+    res_receitas = await session.execute(query_receitas)
+    receitas = list(res_receitas.scalars().all())
+    total_receita = sum(r.valor for r in receitas) if receitas else Decimal("0.00")
+
+    # 3. Buscar e somar despesas
+    query_despesas = select(DespesaViagem).where(DespesaViagem.transportadora_id == transportadora_id)
     res_despesas = await session.execute(query_despesas)
     despesas = list(res_despesas.scalars().all())
     total_despesas = sum(d.valor for d in despesas) if despesas else Decimal("0.00")
 
-    # 3. Margem de Contribuição
+    # 4. Margem de Contribuição
     margem_contribuicao = total_receita - total_despesas
     
     # Calcular percentual de lucro
@@ -34,29 +40,33 @@ async def get_lucratividade_dashboard(session: AsyncSession) -> DashboardRespons
     if total_receita > 0:
         percentual_lucro = (margem_contribuicao / total_receita) * 100
 
-    # 4. Processamento de alertas analíticos por viagem
+    # 5. Processamento de alertas analíticos por viagem
     alertas = []
     for v in viagens:
-        # Filtrar despesas desta viagem específica
+        # Filtrar receitas e despesas desta viagem
+        receitas_viagem = [r for r in receitas if r.viagem_id == v.id]
         despesas_viagem = [d for d in despesas if d.viagem_id == v.id]
+        
+        faturamento_viagem = sum(r.valor for r in receitas_viagem)
         custo_total_viagem = sum(d.valor for d in despesas_viagem)
-        lucro_viagem = v.valor_frete - custo_total_viagem
+        
+        lucro_viagem = faturamento_viagem - custo_total_viagem
         
         # Alerta Crítico: Prejuízo
         if lucro_viagem < 0:
             alertas.append(
                 AlertaDashboard(
                     viagem_id=str(v.id),
-                    mensagem=f"Viagem de {v.origem_cidade} para {v.destino_cidade} gerou PREJUÍZO de R$ {abs(lucro_viagem):.2f}.",
+                    mensagem=f"Viagem #{v.codigo_viagem} gerou PREJUÍZO de R$ {abs(lucro_viagem):.2f}.",
                     tipo="CORROSIVO_ALERTA"
                 )
             )
-        # Alerta de Atenção: Margem muito baixa (< 15% do frete)
-        elif v.valor_frete > 0 and (lucro_viagem / v.valor_frete) < 0.15:
+        # Alerta de Atenção: Margem muito baixa (< 15% do faturamento)
+        elif faturamento_viagem > 0 and (lucro_viagem / faturamento_viagem) < 0.15:
             alertas.append(
                 AlertaDashboard(
                     viagem_id=str(v.id),
-                    mensagem=f"Viagem de {v.origem_cidade} para {v.destino_cidade} operando com margem crítica abaixo de 15%.",
+                    mensagem=f"Viagem #{v.codigo_viagem} operando com margem crítica abaixo de 15%.",
                     tipo="ATENCAO"
                 )
             )

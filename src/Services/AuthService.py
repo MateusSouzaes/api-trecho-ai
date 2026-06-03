@@ -2,7 +2,6 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 from sqlmodel import select
 from fastapi import HTTPException, status
 
@@ -16,105 +15,10 @@ from src.Dtos.AuthDto import TransportadoraRegister, LoginRequest, TokenResponse
 
 logger = logging.getLogger(__name__)
 
-async def create_tenant_database_schema(session: AsyncSession, tenant_id: uuid.UUID) -> None:
-    """
-    Cria fisicamente o esquema 'tenant_<tenant_id>' no PostgreSQL
-    e inicializa as tabelas operacionais locais daquele tenant.
-    """
-    schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
-    
-    # 1. Criar o schema
-    await session.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name};"))
-    await session.commit()
-    
-    # 2. Criar as tabelas locais
-    ddl_statements = [
-        # Veículo
-        f"""
-        CREATE TABLE IF NOT EXISTS {schema_name}.veiculo (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            placa VARCHAR(10) UNIQUE NOT NULL,
-            modelo VARCHAR(100) NOT NULL,
-            marca VARCHAR(100) NOT NULL,
-            ano_modelo INT NOT NULL,
-            capacidade_toneladas NUMERIC(10, 2) NOT NULL,
-            status VARCHAR(20) NOT NULL DEFAULT 'ATIVA',
-            consumo_medio_kml NUMERIC(5, 2) NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        """,
-        # Motorista
-        f"""
-        CREATE TABLE IF NOT EXISTS {schema_name}.motorista (
-            id UUID PRIMARY KEY,
-            cnh_numero VARCHAR(20) NOT NULL,
-            cnh_categoria VARCHAR(5) NOT NULL,
-            cnh_validade TIMESTAMP NOT NULL,
-            status VARCHAR(20) NOT NULL DEFAULT 'ATIVA',
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        """,
-        # Viagem
-        f"""
-        CREATE TABLE IF NOT EXISTS {schema_name}.viagem (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            veiculo_id UUID NOT NULL REFERENCES {schema_name}.veiculo(id),
-            motorista_id UUID NOT NULL REFERENCES {schema_name}.motorista(id),
-            origem_cidade VARCHAR(255) NOT NULL,
-            destino_cidade VARCHAR(255) NOT NULL,
-            km_inicial NUMERIC(10, 2) NOT NULL,
-            km_final NUMERIC(10, 2),
-            valor_frete NUMERIC(15, 2) NOT NULL,
-            status VARCHAR(20) NOT NULL DEFAULT 'ATIVA',
-            data_partida TIMESTAMP NOT NULL,
-            data_chegada TIMESTAMP,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        """,
-        # Despesa Viagem
-        f"""
-        CREATE TABLE IF NOT EXISTS {schema_name}.despesa_viagem (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            viagem_id UUID NOT NULL REFERENCES {schema_name}.viagem(id) ON DELETE CASCADE,
-            tipo_despesa VARCHAR(50) NOT NULL,
-            valor NUMERIC(15, 2) NOT NULL,
-            descricao VARCHAR(255),
-            data_lancamento TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        """,
-        # Mensagem Chat
-        f"""
-        CREATE TABLE IF NOT EXISTS {schema_name}.mensagem_chat (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            motorista_id UUID NOT NULL REFERENCES {schema_name}.motorista(id),
-            conteudo TEXT NOT NULL,
-            remetente VARCHAR(20) NOT NULL,
-            lido BOOLEAN NOT NULL DEFAULT FALSE,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    ]
-    
-    try:
-        for statement in ddl_statements:
-            await session.execute(text(statement))
-        await session.commit()
-        logger.info(f"Esquema e tabelas locais criadas com sucesso para {schema_name}.")
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"Erro ao inicializar tabelas do tenant {schema_name}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Falha ao criar tabelas operacionais do tenant."
-        )
-
 async def register_new_tenant(data: TransportadoraRegister, session: AsyncSession) -> Usuario:
     """
     Executa o registro global da transportadora (Pessoa, PessoaJuridica, Endereco, Transportadora),
-    cria o usuário administrador e provisiona o schema operacional do tenant.
+    e cria o usuário administrador.
     """
     # 1. Validar CNPJ e CEP via APIs reais (ou usar fallback)
     cnpj_info = await fetch_cnpj_info(data.cnpj)
@@ -187,9 +91,6 @@ async def register_new_tenant(data: TransportadoraRegister, session: AsyncSessio
     )
     session.add(usuario)
     await session.flush()
-    
-    # 7. Criar tabelas locais do Tenant no banco
-    await create_tenant_database_schema(session, transportadora.id)
 
     await session.commit()
     await session.refresh(usuario)
@@ -220,7 +121,7 @@ async def authenticate_user(data: LoginRequest, session: AsyncSession) -> TokenR
         data={"sub": user.email, "role": user.role, "transportadora_id": str(user.transportadora_id)}
     )
 
-    # Registrar Sessão no banco (opcional para tracking)
+    # Registrar Sessão no banco
     sessao = Sessao(
         usuario_id=user.id,
         token=access_token,

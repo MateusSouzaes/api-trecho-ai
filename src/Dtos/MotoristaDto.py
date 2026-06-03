@@ -17,7 +17,8 @@ class MotoristaCreate(BaseModel):
     cnh_numero: str = Field(..., max_length=20)
     cnh_categoria: str = Field(..., max_length=5)
     cnh_validade: datetime
-    status: Optional[str] = Field("ATIVA", max_length=20)
+    cnh_pontos: Optional[int] = Field(0, ge=0)
+    status_operacional: Optional[str] = Field("DISPONIVEL", max_length=20)
 
     @field_validator("cpf")
     @classmethod
@@ -34,7 +35,8 @@ class MotoristaUpdate(BaseModel):
     cnh_numero: Optional[str] = Field(None, max_length=20)
     cnh_categoria: Optional[str] = Field(None, max_length=5)
     cnh_validade: Optional[datetime] = None
-    status: Optional[str] = Field(None, max_length=20)
+    cnh_pontos: Optional[int] = Field(None, ge=0)
+    status_operacional: Optional[str] = Field(None, max_length=20)
 
 class MotoristaResponse(BaseModel):
     id: UUID
@@ -47,7 +49,8 @@ class MotoristaResponse(BaseModel):
     cnh_numero: str
     cnh_categoria: str
     cnh_validade: datetime
-    status: str
+    cnh_pontos: int
+    status_operacional: str
 
     class Config:
         from_attributes = True

@@ -10,7 +10,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
-from src.core.database import init_db, close_db
+from src.DataContexts.DatabaseContext import init_db, close_db
+
+# Importar routers dos Controllers
+from src.Controllers.AuthController import router as auth_router
+from src.Controllers.FrotaController import router as frota_router
+from src.Controllers.PessoasController import router as pessoas_router
+from src.Controllers.ViagensController import router as viagens_router
+from src.Controllers.DashboardController import router as dashboard_router
+from src.Controllers.WhatsappController import router as whatsapp_router
 
 # Configurar logging
 logging.basicConfig(
@@ -55,6 +63,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Incluir routers
+app.include_router(auth_router)
+app.include_router(frota_router)
+app.include_router(pessoas_router)
+app.include_router(viagens_router)
+app.include_router(dashboard_router)
+app.include_router(whatsapp_router)
 
 
 # Rotas de Health Check

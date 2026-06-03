@@ -1,5 +1,17 @@
 # AI References
 .claude/
+.antigravity/
+
+# Environments, credentials and caches
+venv/
+.venv/
+env/
+.env
+.env.local
+.env.*
+.pytest_cache/
+.vscode/
+.idea/
 
 
 # Byte-compiled / optimized / DLL files

@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from src.core.config import settings
 from src.DataContexts.DatabaseContext import init_db, close_db
@@ -39,6 +40,24 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Iniciando Trecho.ai API...")
     await init_db()
     logger.info("✅ API iniciada com sucesso!")
+    
+    # Obter a porta dinamicamente para mostrar o link clicável
+    import sys
+    port = 8000
+    for i, arg in enumerate(sys.argv):
+        if arg == "--port" and i + 1 < len(sys.argv):
+            try:
+                port = int(sys.argv[i + 1])
+            except ValueError:
+                pass
+        elif arg.startswith("--port="):
+            try:
+                port = int(arg.split("=")[1])
+            except ValueError:
+                pass
+    
+    # Imprimir o link clicável no terminal
+    print(f"\n🔗 Acesse a API e a documentação em: http://localhost:{port}\n")
     
     yield
     
@@ -73,13 +92,10 @@ app.include_router(dashboard_router)
 app.include_router(whatsapp_router)
 
 
-# Rotas de Health Check
-@app.get("/")
+# Rota raiz - redireciona para o Swagger
+@app.get("/", include_in_schema=False)
 async def read_root():
-    return {
-        "status": "Trecho.ai operando a todo vapor! 🚛",
-        "version": settings.app_version
-    }
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")

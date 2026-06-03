@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Trecho.IA | Gestão de Pessoas</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Hanken+Grotesk:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            background-color: #051424;
+            color: #d4e4fa;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .glass-edge {
+            border: 1px solid rgba(124, 255, 215, 0.1);
+            backdrop-filter: blur(8px);
+        }
+        .glow-active {
+            box-shadow: 0 0 15px rgba(124, 255, 215, 0.15);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #051424; }
+        ::-webkit-scrollbar-thumb { background: #273647; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #43474d; }
+
+        .sidebar-active {
+            background-color: #1c2b3c;
+            border-left: 2px solid #7cffd7;
+            color: #7cffd7;
+        }
+    </style>
+    <script>
+        if (!localStorage.getItem('access_token')) {
+            window.location.href = '/login';
+        }
+    </script>
+</head>
+<body class="flex overflow-hidden">
+
+<!-- SideNavBar Anchor -->
+<aside class="w-sidebar-width h-screen fixed left-0 top-0 flex flex-col h-full bg-surface-container border-r border-outline-variant transition-all duration-200 ease-in-out z-50">
+    <div class="p-6">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary-container rounded flex items-center justify-center">
+                <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+            </div>
+            <div>
+                <h1 class="font-headline-md text-headline-md font-bold text-primary leading-none">Trecho.IA</h1>
+                <p class="text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant opacity-70">TMS Satellite</p>
+            </div>
+        </div>
+    </div>
+    <nav class="flex-1 mt-4">
+        <ul class="space-y-1">
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/dashboard">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="font-body-md text-body-md">Painel</span>
+                </a>
+            </li>
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded sidebar-active transition-all" href="/pessoas">
+                    <span class="material-symbols-outlined">group</span>
+                    <span class="font-body-md text-body-md">Pessoas</span>
+                </a>
+            </li>
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/frota">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                    <span class="font-body-md text-body-md">Frota</span>
+                </a>
+            </li>
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/viagens">
+                    <span class="material-symbols-outlined">route</span>
+                    <span class="font-body-md text-body-md">Viagens</span>
+                </a>
+            </li>
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/whatsapp">
+                    <span class="material-symbols-outlined">forum</span>
+                    <span class="font-body-md text-body-md">Fila WhatsApp</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <div class="p-3 border-t border-outline-variant space-y-1">
+        <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all group" href="/whatsapp">
+            <div class="relative">
+                <span class="material-symbols-outlined text-secondary">smart_toy</span>
+                <span class="absolute -top-1 -right-1 w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+            </div>
+            <span class="font-body-md text-body-md">Assistente RodovIA</span>
+        </a>
+        <button onclick="logout()" class="w-full flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-error/10 hover:text-error transition-all text-left">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="font-body-md text-body-md">Sair</span>
+        </button>
+    </div>
+</aside>
+
+<!-- Main Content Shell -->
+<main class="ml-sidebar-width flex-1 flex flex-col h-screen overflow-hidden">
+    <!-- TopNavBar Anchor -->
+    <header class="h-16 flex justify-between items-center w-full px-container-padding bg-surface border-b border-outline-variant z-40">
+        <div class="flex items-center gap-6">
+            <div class="relative w-96">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline scale-75">search</span>
+                <input class="w-full bg-surface-container-low border border-outline-variant rounded px-10 py-2 text-body-md font-body-md focus:outline-none focus:border-secondary transition-all" id="search-input" placeholder="Buscar motoristas por nome ou CPF..." type="text" oninput="filterDrivers()"/>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <button class="w-10 h-10 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-high transition-all">
+                <span class="material-symbols-outlined">notifications</span>
+            </button>
+            <button class="w-10 h-10 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-high transition-all">
+                <span class="material-symbols-outlined">smart_toy</span>
+            </button>
+            <div class="h-8 w-[1px] bg-outline-variant mx-2"></div>
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden sm:block">
+                    <p class="text-body-sm font-label-caps text-on-surface leading-none uppercase" id="username-display">ADMINISTRADOR</p>
+                    <p class="text-[10px] text-on-surface-variant">Logistics Hub Alpha</p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant overflow-hidden">
+                    <span class="material-symbols-outlined text-secondary">account_circle</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto p-container-padding">
+        <!-- Page Header -->
+        <div class="flex justify-between items-end mb-8">
+            <div>
+                <h2 class="font-headline-md text-headline-md text-on-surface mb-1">Gestão de Pessoas (Motoristas)</h2>
+                <p class="text-on-surface-variant font-body-md">Gerencie os perfis de motoristas credenciados na sua transportadora.</p>
+            </div>
+            <div class="flex gap-3">
+                <button class="flex items-center gap-2 px-6 py-2 bg-secondary text-on-secondary rounded font-bold font-body-md hover:opacity-90 transition-all shadow-lg shadow-secondary/10" onclick="openCreateModal()">
+                    <span class="material-symbols-outlined">add</span>
+                    Novo Motorista
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-surface-container p-4 rounded border border-outline-variant flex justify-between items-center">
+                <div>
+                    <p class="text-label-caps font-label-caps text-on-surface-variant opacity-60">MOTORISTAS ATIVOS</p>
+                    <p class="text-headline-sm font-headline-sm text-on-surface mt-1" id="stat-total">0</p>
+                </div>
+                <span class="material-symbols-outlined text-secondary opacity-30 text-4xl">group</span>
+            </div>
+            <div class="bg-surface-container p-4 rounded border border-outline-variant flex justify-between items-center">
+                <div>
+                    <p class="text-label-caps font-label-caps text-on-surface-variant opacity-60">DISPONÍVEIS</p>
+                    <p class="text-headline-sm font-headline-sm text-secondary mt-1" id="stat-disponivel">0</p>
+                </div>
+                <span class="material-symbols-outlined text-secondary opacity-30 text-4xl">check_circle</span>
+            </div>
+            <div class="bg-surface-container p-4 rounded border border-outline-variant flex justify-between items-center">
+                <div>
+                    <p class="text-label-caps font-label-caps text-on-surface-variant opacity-60">EM VIAGEM</p>
+                    <p class="text-headline-sm font-headline-sm text-primary mt-1" id="stat-viagem">0</p>
+                </div>
+                <span class="material-symbols-outlined text-primary opacity-30 text-4xl">local_shipping</span>
+            </div>
+            <div class="bg-surface-container p-4 rounded border border-outline-variant flex justify-between items-center">
+                <div>
+                    <p class="text-label-caps font-label-caps text-on-surface-variant opacity-60">BLOQUEADOS</p>
+                    <p class="text-headline-sm font-headline-sm text-error mt-1" id="stat-bloqueado">0</p>
+                </div>
+                <span class="material-symbols-outlined text-error opacity-30 text-4xl">warning</span>
+            </div>
+        </div>
+
+        <!-- Data Table Card -->
+        <div class="bg-surface-container rounded border border-outline-variant overflow-hidden">
+            <table class="w-full text-left border-collapse" id="drivers-table">
+                <thead>
+                    <tr class="bg-surface-container-high">
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">NOME / CPF</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">CNH INFO</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">E-MAIL / TELEFONE</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">PONTOS CNH</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">STATUS OPERACIONAL</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70 text-right">AÇÕES</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant/30" id="drivers-list">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Modal Overlay -->
+<div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center hidden" id="modal-overlay">
+    <div class="bg-surface-container max-w-2xl w-full max-h-[921px] overflow-hidden flex flex-col rounded shadow-2xl glass-edge border border-outline-variant/30 animate-in fade-in zoom-in duration-200">
+        <!-- Modal Header -->
+        <div class="p-6 border-b border-outline-variant flex justify-between items-center">
+            <div>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface" id="modal-title">Novo Motorista</h3>
+                <p class="text-body-sm text-on-surface-variant">Preencha os detalhes cadastrais e CNH do motorista.</p>
+            </div>
+            <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-all" onclick="closeModal()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <!-- Modal Body -->
+        <div class="p-6 overflow-y-auto">
+            <form class="space-y-6" id="driver-form" onsubmit="saveDriver(event)">
+                <input type="hidden" id="driver-id"/>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">NOME COMPLETO</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-nome" placeholder="Digite o nome..." required type="text"/>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">E-MAIL</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-email" placeholder="email@exemplo.com" type="email"/>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">TELEFONE</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-telefone" placeholder="(00) 00000-0000" type="text"/>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">CPF</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-cpf" placeholder="000.000.000-00" required type="text"/>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">RG</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-rg" placeholder="Digite o RG..." type="text"/>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">DATA DE NASCIMENTO</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-nascimento" type="date"/>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-outline-variant/30">
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-4 block">HABLITAÇÃO (CNH)</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">NÚMERO CNH</label>
+                            <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-cnh-num" placeholder="Número CNH" required type="text"/>
+                        </div>
+                        <div>
+                            <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">CATEGORIA</label>
+                            <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-cnh-cat" placeholder="Ex: E, D, AC" required type="text"/>
+                        </div>
+                        <div>
+                            <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">VALIDADE</label>
+                            <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-cnh-val" required type="date"/>
+                        </div>
+                        <div>
+                            <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">PONTOS CNH</label>
+                            <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-cnh-pontos" type="number" min="0" value="0"/>
+                        </div>
+                        <div>
+                            <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">STATUS OPERACIONAL</label>
+                            <select class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-status">
+                                <option value="DISPONIVEL">Disponível</option>
+                                <option value="EM_VIAGEM">Em Viagem</option>
+                                <option value="BLOQUEADO">Bloqueado</option>
+                                <option value="SUSPENSO">Suspenso</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer Inside Form -->
+                <div class="pt-6 border-t border-outline-variant flex justify-end gap-3">
+                    <button class="px-6 py-2 text-on-surface-variant hover:text-on-surface transition-all" type="button" onclick="closeModal()">Cancelar</button>
+                    <button class="px-8 py-2 bg-secondary text-on-secondary rounded font-bold hover:opacity-90 transition-all flex items-center gap-2" type="submit">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        Salvar Motorista
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('access_token');
+    let allDrivers = [];
+
+    function logout() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+    }
+
+    // Load User Information
+    async function loadUser() {
+        try {
+            const res = await fetch('/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Unauthorized');
+            const user = await res.json();
+            document.getElementById('username-display').innerText = user.nome || user.email;
+        } catch (err) {
+            logout();
+        }
+    }
+
+    // Load drivers list
+    async function loadDrivers() {
+        try {
+            const res = await fetch('/pessoas/motoristas', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) return;
+            allDrivers = await res.json();
+            renderDrivers(allDrivers);
+        } catch (err) {
+            console.error('Failed to load drivers', err);
+        }
+    }
+
+    function renderDrivers(drivers) {
+        const tbody = document.getElementById('drivers-list');
+        tbody.innerHTML = '';
+
+        let countTotal = 0;
+        let countDisponivel = 0;
+        let countViagem = 0;
+        let countBloqueado = 0;
+
+        drivers.forEach(driver => {
+            countTotal++;
+            if (driver.status_operacional === 'DISPONIVEL') countDisponivel++;
+            else if (driver.status_operacional === 'EM_VIAGEM') countViagem++;
+            else if (driver.status_operacional === 'BLOQUEADO') countBloqueado++;
+
+            // Status Badge styling
+            let statusBadge = '';
+            if (driver.status_operacional === 'DISPONIVEL') {
+                statusBadge = `<span class="bg-emerald-100 text-emerald-800 ring-1 ring-emerald-600/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Disponível</span>`;
+            } else if (driver.status_operacional === 'EM_VIAGEM') {
+                statusBadge = `<span class="bg-primary/10 text-primary ring-1 ring-primary/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Em Viagem</span>`;
+            } else if (driver.status_operacional === 'BLOQUEADO') {
+                statusBadge = `<span class="bg-rose-100 text-rose-800 ring-1 ring-rose-600/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Bloqueado</span>`;
+            } else {
+                statusBadge = `<span class="bg-slate-100 text-slate-800 ring-1 ring-slate-600/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Suspenso</span>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-surface-container-high transition-colors group";
+            tr.innerHTML = `
+                <td class="px-6 py-4 border-l-2 border-transparent group-hover:border-secondary">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center font-bold text-primary text-xs">
+                            ${driver.nome.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                            <div class="font-body-md text-on-surface">${driver.nome}</div>
+                            <div class="font-data-mono text-[10px] text-on-surface-variant">${driver.cpf}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="bg-surface-variant text-[10px] font-bold px-2 py-0.5 rounded text-on-surface-variant">${driver.cnh_categoria}</span>
+                    <span class="font-data-mono text-xs text-on-surface-variant block mt-1">${driver.cnh_numero}</span>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="font-data-mono text-data-mono text-on-surface-variant">${driver.email || '--'}</span>
+                    <span class="font-data-mono text-xs text-on-surface-variant block mt-1">${driver.telefone || '--'}</span>
+                </td>
+                <td class="px-6 py-4 font-data-mono text-sm">${driver.cnh_pontos} pts</td>
+                <td class="px-6 py-4">${statusBadge}</td>
+                <td class="px-6 py-4 text-right">
+                    <button onclick="editDriver('${driver.id}')" class="p-1 hover:text-secondary transition-colors" title="Editar"><span class="material-symbols-outlined text-lg">edit</span></button>
+                    <button onclick="deleteDriver('${driver.id}')" class="p-1 hover:text-error transition-colors" title="Excluir"><span class="material-symbols-outlined text-lg">delete</span></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Update stats
+        document.getElementById('stat-total').innerText = countTotal;
+        document.getElementById('stat-disponivel').innerText = countDisponivel;
+        document.getElementById('stat-viagem').innerText = countViagem;
+        document.getElementById('stat-bloqueado').innerText = countBloqueado;
+    }
+
+    function filterDrivers() {
+        const query = document.getElementById('search-input').value.toLowerCase();
+        const filtered = allDrivers.filter(d => 
+            d.nome.toLowerCase().includes(query) || 
+            d.cpf.includes(query)
+        );
+        renderDrivers(filtered);
+    }
+
+    // Modal Operations
+    function openCreateModal() {
+        document.getElementById('modal-title').innerText = "Novo Motorista";
+        document.getElementById('driver-form').reset();
+        document.getElementById('driver-id').value = '';
+        document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    function editDriver(id) {
+        const driver = allDrivers.find(d => d.id === id);
+        if (!driver) return;
+
+        document.getElementById('modal-title').innerText = "Editar Motorista";
+        document.getElementById('driver-id').value = driver.id;
+        document.getElementById('input-nome').value = driver.nome;
+        document.getElementById('input-email').value = driver.email || '';
+        document.getElementById('input-telefone').value = driver.telefone || '';
+        document.getElementById('input-cpf').value = driver.cpf;
+        document.getElementById('input-rg').value = driver.rg || '';
+        
+        if (driver.data_nascimento) {
+            document.getElementById('input-nascimento').value = driver.data_nascimento.split('T')[0];
+        } else {
+            document.getElementById('input-nascimento').value = '';
+        }
+
+        document.getElementById('input-cnh-num').value = driver.cnh_numero;
+        document.getElementById('input-cnh-cat').value = driver.cnh_categoria;
+        document.getElementById('input-cnh-val').value = driver.cnh_validade.split('T')[0];
+        document.getElementById('input-cnh-pontos').value = driver.cnh_pontos;
+        document.getElementById('input-status').value = driver.status_operacional;
+
+        document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').classList.add('hidden');
+    }
+
+    async function saveDriver(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('driver-id').value;
+        const payload = {
+            nome: document.getElementById('input-nome').value,
+            email: document.getElementById('input-email').value || null,
+            telefone: document.getElementById('input-telefone').value || null,
+            cpf: document.getElementById('input-cpf').value,
+            rg: document.getElementById('input-rg').value || null,
+            data_nascimento: document.getElementById('input-nascimento').value ? new Date(document.getElementById('input-nascimento').value).toISOString() : null,
+            cnh_numero: document.getElementById('input-cnh-num').value,
+            cnh_categoria: document.getElementById('input-cnh-cat').value,
+            cnh_validade: new Date(document.getElementById('input-cnh-val').value).toISOString(),
+            cnh_pontos: parseInt(document.getElementById('input-cnh-pontos').value) || 0,
+            status_operacional: document.getElementById('input-status').value
+        };
+
+        try {
+            let res;
+            if (id) {
+                // Update
+                res = await fetch(`/pessoas/motoristas/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                // Create
+                res = await fetch('/pessoas/motoristas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert('Erro ao salvar motorista: ' + (err.detail || JSON.stringify(err)));
+                return;
+            }
+
+            closeModal();
+            loadDrivers();
+        } catch (err) {
+            console.error('Failed to save driver', err);
+            alert('Falha na requisição para salvar motorista.');
+        }
+    }
+
+    async function deleteDriver(id) {
+        if (!confirm('Deseja realmente remover este motorista?')) return;
+
+        try {
+            const res = await fetch(`/pessoas/motoristas/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                alert('Erro ao excluir: ' + (err.detail || JSON.stringify(err)));
+                return;
+            }
+            loadDrivers();
+        } catch (err) {
+            console.error('Failed to delete driver', err);
+        }
+    }
+
+    // Initialize
+    loadUser();
+    loadDrivers();
+
+    window.addEventListener('keydown', (e) => {
+        if(e.key === 'Escape') closeModal();
+    });
+</script>
+</body>
+</html>

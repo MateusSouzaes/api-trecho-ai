@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Trecho.IA | Gestão de Viagens</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Hanken+Grotesk:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            background-color: #051424;
+            color: #d4e4fa;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .glass-edge {
+            border: 1px solid rgba(124, 255, 215, 0.1);
+            backdrop-filter: blur(8px);
+        }
+        .glow-active {
+            box-shadow: 0 0 15px rgba(124, 255, 215, 0.15);
+        }
+        .sidebar-active {
+            background-color: #1c2b3c;
+            border-left: 2px solid #7cffd7;
+            color: #7cffd7;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #051424; }
+        ::-webkit-scrollbar-thumb { background: #273647; border-radius: 10px; }
+    </style>
+    <script>
+        if (!localStorage.getItem('access_token')) {
+            window.location.href = '/login';
+        }
+    </script>
+</head>
+<body class="flex overflow-hidden h-screen bg-background">
+
+<!-- SideNavBar -->
+<aside class="w-sidebar-width h-screen fixed left-0 top-0 flex flex-col h-full bg-surface-container border-r border-outline-variant z-50">
+    <div class="p-6">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary-container rounded flex items-center justify-center">
+                <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+            </div>
+            <div>
+                <h1 class="font-headline-md text-headline-md font-bold text-primary leading-none">Trecho.IA</h1>
+                <p class="text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant opacity-70">TMS Satellite</p>
+            </div>
+        </div>
+    </div>
+    <nav class="flex-1 mt-4">
+        <ul class="space-y-1">
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/dashboard">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="font-body-md text-body-md">Painel</span>
+                </a>
+            </li>
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/pessoas">
+                    <span class="material-symbols-outlined">group</span>
+                    <span class="font-body-md text-body-md">Pessoas</span>
+                </a>
+            </li>
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/frota">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                    <span class="font-body-md text-body-md">Frota</span>
+                </a>
+            </li>
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded sidebar-active transition-all" href="/viagens">
+                    <span class="material-symbols-outlined">route</span>
+                    <span class="font-body-md text-body-md">Viagens</span>
+                </a>
+            </li>
+            <li class="px-3">
+                <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/whatsapp">
+                    <span class="material-symbols-outlined">forum</span>
+                    <span class="font-body-md text-body-md">Fila WhatsApp</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <div class="p-3 border-t border-outline-variant space-y-1">
+        <a class="flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-all" href="/whatsapp">
+            <span class="material-symbols-outlined text-secondary">smart_toy</span>
+            <span class="font-body-md text-body-md">Assistente RodovIA</span>
+        </a>
+        <button onclick="logout()" class="w-full flex items-center gap-4 px-4 py-3 rounded text-on-surface-variant hover:bg-error/10 hover:text-error transition-all text-left">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="font-body-md text-body-md">Sair</span>
+        </button>
+    </div>
+</aside>
+
+<!-- Main Content Shell -->
+<main class="ml-sidebar-width flex-1 flex flex-col h-screen overflow-hidden">
+    <!-- TopNavBar Anchor -->
+    <header class="h-16 flex justify-between items-center w-full px-container-padding bg-surface border-b border-outline-variant z-40">
+        <div class="flex items-center gap-6">
+            <h2 class="font-headline-sm text-headline-sm text-on-surface">Gestão de Viagens</h2>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="text-right">
+                    <p class="font-label-caps text-label-caps text-on-surface leading-none" id="username-display">ADMIN</p>
+                    <p class="font-body-sm text-secondary">Evolution Controller</p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant overflow-hidden">
+                    <span class="material-symbols-outlined text-secondary">account_circle</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto p-container-padding">
+        <!-- Page Header -->
+        <div class="flex justify-between items-end mb-8">
+            <div>
+                <p class="text-on-surface-variant font-body-md">Planeje rotas, lance despesas e acompanhe o andamento operacional das viagens.</p>
+            </div>
+            <button class="flex items-center gap-2 px-6 py-2 bg-secondary text-on-secondary rounded font-bold font-body-md hover:opacity-90 transition-all shadow-lg shadow-secondary/10" onclick="openCreateModal()">
+                <span class="material-symbols-outlined">add</span>
+                Nova Viagem
+            </button>
+        </div>
+
+        <!-- Viagens Table -->
+        <div class="bg-surface-container rounded border border-outline-variant overflow-hidden">
+            <table class="w-full text-left border-collapse" id="viagens-table">
+                <thead>
+                    <tr class="bg-surface-container-high border-b border-outline-variant">
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">CÓDIGO / DATA INÍCIO</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">MOTORISTA</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">VEÍCULO (CAVALO)</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">KM RODADO</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">STATUS OPERACIONAL</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70">STATUS FINANCEIRO</th>
+                        <th class="px-6 py-3 font-label-caps text-label-caps text-on-surface-variant opacity-70 text-right">AÇÕES</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant/30 text-body-md" id="viagens-list">
+                    <!-- Dynamic rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Create Viagem Modal -->
+<div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center hidden" id="modal-viagem">
+    <div class="bg-surface-container max-w-xl w-full max-h-[90%] overflow-hidden flex flex-col rounded shadow-2xl glass-edge border border-outline-variant/30 animate-in fade-in zoom-in duration-200">
+        <div class="p-6 border-b border-outline-variant flex justify-between items-center">
+            <div>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface">Nova Viagem</h3>
+                <p class="text-body-sm text-on-surface-variant">Selecione o motorista, veículo e preencha os dados da viagem.</p>
+            </div>
+            <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-all" onclick="closeModal('viagem')">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto">
+            <form class="space-y-4" id="form-viagem" onsubmit="saveViagem(event)">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">MOTORISTA</label>
+                        <select class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-motorista" required>
+                            <!-- Options filled dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">VEÍCULO (CAVALO)</label>
+                        <select class="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-cavalo" required>
+                            <!-- Options filled dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">HODÔMETRO INICIAL</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-hodo" type="number" min="0" value="0" required/>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">DATA INÍCIO</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-data" type="datetime-local" required/>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-2 block">ROTA / DESTINO (DESCRIÇÃO)</label>
+                        <input class="w-full bg-surface border border-outline-variant rounded px-4 py-2 text-on-surface focus:outline-none focus:border-secondary transition-all" id="input-rota" placeholder="Ex: Santos-SP para Rondonópolis-MT" required type="text"/>
+                    </div>
+                </div>
+                <div class="pt-6 border-t border-outline-variant flex justify-end gap-3">
+                    <button class="px-6 py-2 text-on-surface-variant hover:text-on-surface transition-all" type="button" onclick="closeModal('viagem')">Cancelar</button>
+                    <button class="px-8 py-2 bg-secondary text-on-secondary rounded font-bold hover:opacity-90 transition-all" type="submit">Iniciar Viagem</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Logs Drawer (Financeiro) -->
+<div class="fixed inset-y-0 right-0 max-w-md w-full bg-surface-container border-l border-outline-variant shadow-2xl z-[100] transform translate-x-full transition-transform duration-300 ease-in-out hidden" id="drawer-financeiro">
+    <div class="h-full flex flex-col">
+        <!-- Drawer Header -->
+        <div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-high">
+            <div>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface">Financeiro da Viagem</h3>
+                <p class="text-body-sm text-on-surface-variant font-data-mono" id="finance-code">COD: --</p>
+            </div>
+            <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-all" onclick="closeDrawer()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <!-- Drawer Body -->
+        <div class="flex-grow overflow-y-auto p-6 space-y-6">
+            <!-- Launch despesa -->
+            <div class="bg-surface p-4 rounded border border-outline-variant/60">
+                <h4 class="font-label-caps text-secondary text-xs mb-3">Lançar Despesa (Custo)</h4>
+                <form onsubmit="launchDespesa(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">CATEGORIA</label>
+                        <select class="w-full bg-surface-container border border-outline-variant rounded p-2 text-sm text-on-surface" id="desp-cat" required>
+                            <option value="COMBUSTIVEL">Combustível</option>
+                            <option value="PEDAGIO">Pedágio</option>
+                            <option value="MANUTENCAO">Manutenção</option>
+                            <option value="ALIMENTACAO">Alimentação</option>
+                            <option value="OUTROS">Outros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">VALOR (R$)</label>
+                        <input class="w-full bg-surface-container border border-outline-variant rounded p-2 text-sm text-on-surface" id="desp-val" type="number" step="0.01" min="0.01" required placeholder="0.00"/>
+                    </div>
+                    <button class="w-full py-2 bg-error text-white text-xs font-bold rounded hover:bg-red-600 transition-colors" type="submit">Lançar Custo</button>
+                </form>
+            </div>
+
+            <!-- Launch receita -->
+            <div class="bg-surface p-4 rounded border border-outline-variant/60">
+                <h4 class="font-label-caps text-emerald-400 text-xs mb-3">Lançar Receita (Faturamento)</h4>
+                <form onsubmit="launchReceita(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">TIPO DE RECEITA</label>
+                        <select class="w-full bg-surface-container border border-outline-variant rounded p-2 text-sm text-on-surface" id="rec-tipo" required>
+                            <option value="FRETE_VALOR">Frete Valor</option>
+                            <option value="PEDAGIO_REEMBOLSO">Reembolso Pedágio</option>
+                            <option value="OUTROS">Outros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">VALOR (R$)</label>
+                        <input class="w-full bg-surface-container border border-outline-variant rounded p-2 text-sm text-on-surface" id="rec-val" type="number" step="0.01" min="0.01" required placeholder="0.00"/>
+                    </div>
+                    <button class="w-full py-2 bg-emerald-500 text-on-secondary font-bold text-xs rounded hover:bg-emerald-600 transition-colors" type="submit">Lançar Faturamento</button>
+                </form>
+            </div>
+
+            <!-- Financial log lists -->
+            <div class="space-y-3">
+                <h4 class="font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant/40 pb-1">Extrato da Viagem</h4>
+                <div class="space-y-2" id="financial-logs-list">
+                    <!-- Dynamic logs -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('access_token');
+    let allDrivers = [];
+    let allCavalos = [];
+    let allViagens = [];
+    let currentViagemId = null;
+
+    function logout() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+    }
+
+    // Load User
+    async function loadUser() {
+        try {
+            const res = await fetch('/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Unauthorized');
+            const user = await res.json();
+            document.getElementById('username-display').innerText = user.nome || user.email;
+        } catch (err) {
+            logout();
+        }
+    }
+
+    // Prepopulate dropdowns
+    async function loadFormSelectors() {
+        try {
+            const resDrivers = await fetch('/pessoas/motoristas', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (resDrivers.ok) {
+                allDrivers = await resDrivers.json();
+                const sel = document.getElementById('input-motorista');
+                sel.innerHTML = '';
+                allDrivers.forEach(d => {
+                    sel.innerHTML += `<option value="${d.id}">${d.nome} (${d.status_operacional})</option>`;
+                });
+            }
+
+            const resCavalos = await fetch('/frota/caminhoes', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (resCavalos.ok) {
+                allCavalos = await resCavalos.json();
+                const sel = document.getElementById('input-cavalo');
+                sel.innerHTML = '';
+                allCavalos.forEach(c => {
+                    sel.innerHTML += `<option value="${c.id}">${c.modelo} - ${c.placa}</option>`;
+                });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function loadViagens() {
+        try {
+            const res = await fetch('/viagens', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) return;
+            allViagens = await res.json();
+            renderViagens(allViagens);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderViagens(viagens) {
+        const tbody = document.getElementById('viagens-list');
+        tbody.innerHTML = '';
+
+        if(viagens.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-on-surface-variant italic">Nenhuma viagem registrada. Clique em "Nova Viagem" para iniciar.</td></tr>';
+            return;
+        }
+
+        viagens.forEach(v => {
+            const driver = allDrivers.find(d => d.id === v.motorista_id);
+            const cavalo = allCavalos.find(c => c.id === v.cavalo_id);
+            const date = new Date(v.data_inicio).toLocaleDateString('pt-BR') + ' ' + new Date(v.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            
+            // Badges
+            let opBadge = '';
+            if (v.status_operacional === 'PLANEJADA') opBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full uppercase">Planejada</span>`;
+            else if (v.status_operacional === 'EM_ROTA') opBadge = `<span class="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full uppercase">Em Rota</span>`;
+            else if (v.status_operacional === 'ENTREGUE') opBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full uppercase">Entregue</span>`;
+            else opBadge = `<span class="bg-slate-100 text-slate-800 text-xs px-2 py-1 rounded-full uppercase">${v.status_operacional}</span>`;
+
+            let finBadge = '';
+            if (v.status_financeiro === 'PENDENTE') finBadge = `<span class="bg-rose-100 text-rose-800 text-xs px-2 py-1 rounded-full uppercase">Pendente</span>`;
+            else if (v.status_financeiro === 'PAGO') finBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full uppercase">Pago</span>`;
+            else finBadge = `<span class="bg-slate-100 text-slate-800 text-xs px-2 py-1 rounded-full uppercase">${v.status_financeiro}</span>`;
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-surface-container-high transition-colors group";
+            tr.innerHTML = `
+                <td class="px-6 py-4 border-l-2 border-transparent group-hover:border-secondary">
+                    <div class="font-bold text-on-surface font-data-mono">#${v.codigo_viagem || v.id.substring(0, 8)}</div>
+                    <div class="text-xs text-on-surface-variant mt-1">${date}</div>
+                </td>
+                <td class="px-6 py-4">${driver ? driver.nome : 'Desconhecido'}</td>
+                <td class="px-6 py-4 font-data-mono">${cavalo ? cavalo.modelo + ' (' + cavalo.placa + ')' : 'Desconhecido'}</td>
+                <td class="px-6 py-4 font-data-mono">${v.total_km_rodado !== null ? v.total_km_rodado + ' km' : '--'}</td>
+                <td class="px-6 py-4">${opBadge}</td>
+                <td class="px-6 py-4">${finBadge}</td>
+                <td class="px-6 py-4 text-right space-x-1">
+                    <button onclick="openFinanceDrawer('${v.id}')" class="p-1 hover:text-secondary transition-colors" title="Financeiro"><span class="material-symbols-outlined text-lg">attach_money</span></button>
+                    ${v.status_operacional === 'EM_ROTA' ? `<button onclick="finishViagem('${v.id}', ${v.hodometro_inicial})" class="p-1 hover:text-emerald-400 transition-colors" title="Finalizar Viagem"><span class="material-symbols-outlined text-lg">check_circle</span></button>` : ''}
+                    ${v.status_operacional === 'PLANEJADA' ? `<button onclick="startViagem('${v.id}')" class="p-1 hover:text-primary transition-colors" title="Iniciar Viagem"><span class="material-symbols-outlined text-lg">play_arrow</span></button>` : ''}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Modal Operations
+    function openCreateModal() {
+        document.getElementById('form-viagem').reset();
+        document.getElementById('input-data').value = new Date().toISOString().substring(0,16);
+        loadFormSelectors();
+        document.getElementById('modal-viagem').classList.remove('hidden');
+    }
+
+    function closeModal(type) {
+        document.getElementById(`modal-${type}`).classList.add('hidden');
+    }
+
+    async function saveViagem(e) {
+        e.preventDefault();
+        
+        const payload = {
+            motorista_id: document.getElementById('input-motorista').value,
+            cavalo_id: document.getElementById('input-cavalo').value,
+            endereco_origem_id: "00000000-0000-0000-0000-000000000001", // Random static UUID
+            endereco_destino_id: "00000000-0000-0000-0000-000000000002", // Random static UUID
+            data_inicio: new Date(document.getElementById('input-data').value).toISOString(),
+            hodometro_inicial: parseInt(document.getElementById('input-hodo').value) || 0,
+            status_operacional: "PLANEJADA",
+            status_financeiro: "PENDENTE"
+        };
+
+        try {
+            const res = await fetch('/viagens', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert('Erro ao criar viagem: ' + (err.detail || JSON.stringify(err)));
+                return;
+            }
+
+            closeModal('viagem');
+            loadViagens();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function startViagem(id) {
+        try {
+            const res = await fetch(`/viagens/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status_operacional: 'EM_ROTA' })
+            });
+            if (res.ok) {
+                loadViagens();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function finishViagem(id, initialHodo) {
+        const finalHodoStr = prompt(`Informe o hodômetro final (deve ser maior ou igual a ${initialHodo}):`);
+        if (finalHodoStr === null) return;
+        const finalHodo = parseInt(finalHodoStr);
+        
+        if (isNaN(finalHodo) || finalHodo < initialHodo) {
+            alert('Hodômetro inválido.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/viagens/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    status_operacional: 'ENTREGUE',
+                    hodometro_final: finalHodo,
+                    data_fim: new Date().toISOString()
+                })
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                alert('Erro ao finalizar: ' + (err.detail || JSON.stringify(err)));
+                return;
+            }
+            loadViagens();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // Finance Drawer Operations
+    async function openFinanceDrawer(id) {
+        currentViagemId = id;
+        const v = allViagens.find(item => item.id === id);
+        document.getElementById('finance-code').innerText = `COD: #${v.codigo_viagem || v.id.substring(0,8)}`;
+        
+        // Show drawer with slide animation
+        const drawer = document.getElementById('drawer-financeiro');
+        drawer.classList.remove('hidden');
+        setTimeout(() => {
+            drawer.classList.remove('translate-x-full');
+        }, 10);
+
+        loadFinancialLogs();
+    }
+
+    function closeDrawer() {
+        const drawer = document.getElementById('drawer-financeiro');
+        drawer.classList.add('translate-x-full');
+        setTimeout(() => {
+            drawer.classList.add('hidden');
+        }, 300);
+        currentViagemId = null;
+    }
+
+    async function loadFinancialLogs() {
+        if(!currentViagemId) return;
+
+        try {
+            // Load despesas
+            const resD = await fetch(`/viagens/${currentViagemId}/despesas`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const despesas = resD.ok ? await resD.json() : [];
+
+            // Load receitas
+            const resR = await fetch(`/viagens/${currentViagemId}/receitas`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const receitas = resR.ok ? await resR.json() : [];
+
+            const list = document.getElementById('financial-logs-list');
+            list.innerHTML = '';
+
+            if(despesas.length === 0 && receitas.length === 0) {
+                list.innerHTML = '<p class="text-body-sm text-on-surface-variant italic">Nenhum custo ou receita lançado para esta viagem.</p>';
+                return;
+            }
+
+            const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            // Render despesas (Costs)
+            despesas.forEach(d => {
+                const div = document.createElement('div');
+                div.className = "p-2 rounded bg-red-950/20 border border-red-500/20 flex justify-between items-center text-xs text-red-300";
+                div.innerHTML = `
+                    <span>[CUSTO] ${d.categoria}</span>
+                    <span class="font-bold">${formatter.format(d.valor)}</span>
+                `;
+                list.appendChild(div);
+            });
+
+            // Render receitas (Revenues)
+            receitas.forEach(r => {
+                const div = document.createElement('div');
+                div.className = "p-2 rounded bg-emerald-950/20 border border-emerald-500/20 flex justify-between items-center text-xs text-emerald-300";
+                div.innerHTML = `
+                    <span>[FATURAMENTO] ${r.tipo_receita}</span>
+                    <span class="font-bold">${formatter.format(r.valor)}</span>
+                `;
+                list.appendChild(div);
+            });
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function launchDespesa(e) {
+        e.preventDefault();
+        if(!currentViagemId) return;
+
+        const payload = {
+            categoria: document.getElementById('desp-cat').value,
+            valor: parseFloat(document.getElementById('desp-val').value),
+            data_despesa: new Date().toISOString()
+        };
+
+        try {
+            const res = await fetch(`/viagens/${currentViagemId}/despesas`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                document.getElementById('desp-val').value = '';
+                loadFinancialLogs();
+                loadViagens(); // Refresh telemetry km etc.
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function launchReceita(e) {
+        e.preventDefault();
+        if(!currentViagemId) return;
+
+        const payload = {
+            cliente_pessoa_id: "00000000-0000-0000-0000-000000000003", // Dummy client ID
+            tipo_receita: document.getElementById('rec-tipo').value,
+            valor: parseFloat(document.getElementById('rec-val').value),
+            status_pagamento: "A_RECEBER"
+        };
+
+        try {
+            const res = await fetch(`/viagens/${currentViagemId}/receitas`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                document.getElementById('rec-val').value = '';
+                loadFinancialLogs();
+                loadViagens();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // Initialize
+    async function init() {
+        await loadUser();
+        await loadFormSelectors();
+        await loadViagens();
+    }
+    init();
+</script>
+</body>
+</html>

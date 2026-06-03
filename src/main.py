@@ -20,6 +20,7 @@ from src.Controllers.PessoasController import router as pessoas_router
 from src.Controllers.ViagensController import router as viagens_router
 from src.Controllers.DashboardController import router as dashboard_router
 from src.Controllers.WhatsappController import router as whatsapp_router
+from src.Controllers.ViewController import router as view_router
 
 # Configurar logging
 logging.basicConfig(
@@ -90,6 +91,7 @@ app.include_router(pessoas_router)
 app.include_router(viagens_router)
 app.include_router(dashboard_router)
 app.include_router(whatsapp_router)
+app.include_router(view_router)
 
 
 # Rota raiz - redireciona para o Swagger

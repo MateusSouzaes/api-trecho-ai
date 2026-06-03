@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Trecho.IA | Autenticação</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Hanken+Grotesk:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "primary": "#b1c8e9",
+                "secondary": "#7cffd7",
+                "background": "#051424",
+                "surface": "#0a1829",
+                "surface-container": "#122131",
+                "surface-container-high": "#1c2b3c",
+                "outline-variant": "#43474d",
+                "on-surface": "#d4e4fa",
+                "on-surface-variant": "#c4c6ce"
+            },
+            "fontFamily": {
+                "body-md": ["Inter"],
+                "headline-md": ["Hanken Grotesk"],
+                "headline-sm": ["Hanken Grotesk"]
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body {
+            background-color: #051424;
+            color: #d4e4fa;
+        }
+        .glass-panel {
+            background: rgba(10, 24, 41, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(124, 255, 215, 0.1);
+        }
+        .tab-active {
+            color: #7cffd7;
+            border-bottom: 2px solid #7cffd7;
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('access_token')) {
+            window.location.href = '/dashboard';
+        }
+    </script>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 relative overflow-y-auto">
+    <!-- Decorative background glow -->
+    <div class="absolute w-96 h-96 bg-secondary/5 rounded-full blur-[120px] -top-10 -left-10 pointer-events-none"></div>
+    <div class="absolute w-96 h-96 bg-secondary/5 rounded-full blur-[120px] -bottom-10 -right-10 pointer-events-none"></div>
+
+    <div class="max-w-2xl w-full glass-panel rounded-2xl shadow-2xl p-8 z-10 my-8">
+        <!-- Logo and header -->
+        <div class="text-center mb-8">
+            <h1 class="font-headline-md text-4xl font-extrabold text-secondary tracking-tight">Trecho.IA</h1>
+            <p class="text-on-surface-variant text-sm mt-2 font-body-md uppercase tracking-wider">SaaS de FinOps Logístico e Inteligência de Frota</p>
+        </div>
+
+        <!-- Tabs switcher -->
+        <div class="flex border-b border-outline-variant/50 mb-6 gap-6 justify-center">
+            <button id="tab-login" onclick="switchTab('login')" class="tab-active pb-2 px-4 font-bold text-sm font-label-caps transition-all">Acessar Conta</button>
+            <button id="tab-register" onclick="switchTab('register')" class="text-on-surface-variant hover:text-on-surface pb-2 px-4 font-bold text-sm font-label-caps transition-all">Criar Conta Enterprise</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="form-login" onsubmit="handleLogin(event)" class="space-y-6">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">E-mail do Usuário</label>
+                <input class="w-full bg-background border border-outline-variant/60 rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="login-email" placeholder="nome@empresa.com" required type="email"/>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Senha de Acesso</label>
+                <input class="w-full bg-background border border-outline-variant/60 rounded px-4 py-2.5 text-on-surface focus:outline-none focus:border-secondary transition-all" id="login-password" placeholder="••••••••" required type="password"/>
+            </div>
+            <button class="w-full py-3 bg-secondary text-on-secondary font-bold rounded hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-secondary/15 flex items-center justify-center gap-2" type="submit">
+                <span class="material-symbols-outlined text-[18px]">login</span>
+                Acessar Painel
+            </button>
+        </form>
+
+        <!-- Registration Form -->
+        <form id="form-register" onsubmit="handleRegister(event)" class="space-y-6 hidden">
+            <!-- Part 1: Transportadora details -->
+            <div class="space-y-4">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-secondary border-b border-outline-variant/30 pb-1">1. Dados da Transportadora</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">CNPJ</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-cnpj" placeholder="00.000.000/0000-00" required type="text"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Razão Social</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-razao" placeholder="TransLog S.A." required type="text"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome Fantasia</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-fantasia" placeholder="TransLog Express"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Inscrição Estadual</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-ie" placeholder="Inscrição Estadual"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">RNTRC</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-rntrc" placeholder="RNTRC" required type="text"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Telefone de Contato</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-telefone" placeholder="(00) 0000-0000"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part 2: Endereço -->
+            <div class="space-y-4">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-secondary border-b border-outline-variant/30 pb-1">2. Endereço Administrativo</h3>
+                <div class="grid grid-cols-6 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">CEP</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-cep" placeholder="00000-000" required type="text" onblur="fetchAddress()"/>
+                    </div>
+                    <div class="col-span-4">
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Logradouro</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-logradouro" placeholder="Avenida, Rua..." required type="text"/>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Número</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-numero" placeholder="123" required type="text"/>
+                    </div>
+                    <div class="col-span-4">
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Complemento</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-complemento" placeholder="Sala, Bloco..."/>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Bairro</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-bairro" placeholder="Bairro" required type="text"/>
+                    </div>
+                    <div class="col-span-3">
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Cidade</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-cidade" placeholder="Cidade" required type="text"/>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">UF</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-estado" placeholder="SP" required type="text" maxlength="2"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part 3: Admin account details -->
+            <div class="space-y-4">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-secondary border-b border-outline-variant/30 pb-1">3. Usuário Administrador (Master)</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome do Admin</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-admin-nome" placeholder="Nome Completo" required type="text"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">E-mail Corporativo</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-admin-email" placeholder="admin@suaempresa.com" required type="email"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Senha (mín. 6 caracteres)</label>
+                        <input class="w-full bg-background border border-outline-variant/60 rounded px-3 py-2 text-on-surface focus:outline-none focus:border-secondary text-sm" id="reg-admin-pass" placeholder="Senha do Administrador" required type="password" minlength="6"/>
+                    </div>
+                </div>
+            </div>
+
+            <button class="w-full py-3 bg-secondary text-on-secondary font-bold rounded hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-secondary/15 flex items-center justify-center gap-2" type="submit">
+                <span class="material-symbols-outlined text-[18px]">verified_user</span>
+                Finalizar Cadastro Enterprise
+            </button>
+        </form>
+    </div>
+
+<script>
+    function switchTab(tab) {
+        const tabL = document.getElementById('tab-login');
+        const tabR = document.getElementById('tab-register');
+        const formL = document.getElementById('form-login');
+        const formR = document.getElementById('form-register');
+
+        if (tab === 'login') {
+            tabL.className = "tab-active pb-2 px-4 font-bold text-sm font-label-caps transition-all";
+            tabR.className = "text-on-surface-variant hover:text-on-surface pb-2 px-4 font-bold text-sm font-label-caps transition-all";
+            formL.classList.remove('hidden');
+            formR.classList.add('hidden');
+        } else {
+            tabR.className = "tab-active pb-2 px-4 font-bold text-sm font-label-caps transition-all";
+            tabL.className = "text-on-surface-variant hover:text-on-surface pb-2 px-4 font-bold text-sm font-label-caps transition-all";
+            formR.classList.remove('hidden');
+            formL.classList.add('hidden');
+        }
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            const res = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert('Erro no login: ' + (err.detail || 'Email ou senha inválidos.'));
+                return;
+            }
+
+            const data = await res.json();
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('user', JSON.stringify(data.usuario));
+            window.location.href = '/dashboard';
+        } catch (err) {
+            console.error(err);
+            alert('Falha na requisição de login.');
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        
+        const payload = {
+            cnpj: document.getElementById('reg-cnpj').value,
+            nome_razao_social: document.getElementById('reg-razao').value,
+            nome_fantasia: document.getElementById('reg-fantasia').value || null,
+            inscricao_estadual: document.getElementById('reg-ie').value || null,
+            telefone: document.getElementById('reg-telefone').value || null,
+            cep: document.getElementById('reg-cep').value,
+            logradouro: document.getElementById('reg-logradouro').value,
+            numero: document.getElementById('reg-numero').value,
+            complemento: document.getElementById('reg-complemento').value || null,
+            bairro: document.getElementById('reg-bairro').value,
+            cidade: document.getElementById('reg-cidade').value,
+            estado: document.getElementById('reg-estado').value.toUpperCase(),
+            rntrc: document.getElementById('reg-rntrc').value,
+            admin_nome: document.getElementById('reg-admin-nome').value,
+            admin_email: document.getElementById('reg-admin-email').value,
+            admin_password: document.getElementById('reg-admin-pass').value
+        };
+
+        try {
+            const res = await fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert('Erro no cadastro: ' + (err.detail || JSON.stringify(err)));
+                return;
+            }
+
+            alert('Transportadora cadastrada com sucesso! Agora efetue o login.');
+            
+            // Switch to login tab and prefill email
+            switchTab('login');
+            document.getElementById('login-email').value = payload.admin_email;
+            document.getElementById('login-password').value = '';
+        } catch (err) {
+            console.error(err);
+            alert('Falha na requisição de cadastro.');
+        }
+    }
+
+    // Auto-fill address using CEP
+    async function fetchAddress() {
+        const cep = document.getElementById('reg-cep').value.replace(/\D/g, '');
+        if (cep.length !== 8) return;
+
+        try {
+            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await res.json();
+            if (data.erro) return;
+
+            document.getElementById('reg-logradouro').value = data.logradouro;
+            document.getElementById('reg-bairro').value = data.bairro;
+            document.getElementById('reg-cidade').value = data.localidade;
+            document.getElementById('reg-estado').value = data.uf;
+        } catch (err) {
+            console.error('Failed to fetch address from CEP', err);
+        }
+    }
+</script>
+</body>
+</html>

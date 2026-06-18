@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
                 pass
     
     # Imprimir o link clicável no terminal
-    print(f"\n🔗 Acesse a API e a documentação em: http://localhost:{port}\n")
+    print(f"\n[API] Acesse a API e a documentacao em: http://localhost:{port}\n")
     
     yield
     
@@ -78,7 +78,10 @@ app = FastAPI(
 # Middlewares
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Restringir em produção
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

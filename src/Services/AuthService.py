@@ -125,7 +125,7 @@ async def authenticate_user(data: LoginRequest, session: AsyncSession) -> TokenR
     sessao = Sessao(
         usuario_id=user.id,
         token=access_token,
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
+        expires_at=(datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)).replace(tzinfo=None)
     )
     session.add(sessao)
     await session.commit()

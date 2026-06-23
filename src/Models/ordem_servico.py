@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 from decimal import Decimal
 from sqlmodel import Field, SQLModel
-from src.Models.base_models import UUIDMixin
+from src.models.base_models import UUIDMixin
 from sqlalchemy import Column, Integer, Identity
 
 class OrdemServico(UUIDMixin, table=True):

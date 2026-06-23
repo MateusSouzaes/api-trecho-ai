@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
-from src.Exceptions.ExceptionHandlers import setup_exception_handlers, BusinessException
+from src.exceptions.exception_handlers import setup_exception_handlers, BusinessException
 
 # Criar app FastAPI de teste
 app = FastAPI()

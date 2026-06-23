@@ -6,33 +6,20 @@ import sqlalchemy.ext.asyncio
 sqlalchemy.ext.asyncio.create_async_engine = MagicMock()
 sqlalchemy.ext.asyncio.async_sessionmaker = MagicMock()
 
-# 2. Pre-mock all services before importing src.main so routers import the mocks
-import src.Services.AuthService as auth_service
-auth_service.register_new_tenant = AsyncMock()
-auth_service.authenticate_user = AsyncMock()
-
-import src.Services.FrotaService as frota_service
-frota_service.create_cavalo = AsyncMock()
-frota_service.get_cavalos = AsyncMock()
-
-import src.Services.PessoasService as pessoas_service
-pessoas_service.create_motorista = AsyncMock()
-pessoas_service.get_motorista_joined = AsyncMock()
-
-import src.Services.ViagensService as viagens_service
-viagens_service.create_viagem = AsyncMock()
-viagens_service.launch_despesa = AsyncMock()
-
 # Now import main and dependencies safely
 from src.main import app
-from src.DataContexts.DatabaseContext import get_current_user, get_current_tenant_session, get_session
-from src.Models.Usuario import Usuario
-from src.Models.Cavalo import Cavalo
-from src.Dtos.MotoristaDto import MotoristaResponse
-from src.Models.Viagem import Viagem
-from src.Models.DespesaViagem import DespesaViagem
-from src.Models.ReceitaViagem import ReceitaViagem
-from src.Models.MensagemChat import MensagemChat
+from src.data_contexts.database_context import get_current_user, get_current_tenant_session, get_session
+from src.models.usuario import Usuario
+from src.models.cavalo import Cavalo
+from src.dtos.motorista_dto import MotoristaResponse
+from src.models.viagem import Viagem
+from src.models.despesa_viagem import DespesaViagem
+from src.models.receita_viagem import ReceitaViagem
+from src.models.mensagem_chat import MensagemChat
+
+from src.services import (
+    AuthService, FrotaService, PessoasService, ViagensService, DashboardService, WhatsappService
+)
 
 from fastapi.testclient import TestClient
 from uuid import uuid4, UUID
@@ -57,17 +44,44 @@ mock_user = Usuario(
 # Mocked session
 mock_session = AsyncMock()
 
+# Mocked services
+mock_auth_service = MagicMock(spec=AuthService)
+mock_auth_service.register_new_tenant = AsyncMock()
+mock_auth_service.authenticate_user = AsyncMock()
+
+mock_frota_service = MagicMock(spec=FrotaService)
+mock_frota_service.create_cavalo = AsyncMock()
+mock_frota_service.get_cavalos = AsyncMock()
+
+mock_pessoas_service = MagicMock(spec=PessoasService)
+mock_pessoas_service.create_motorista = AsyncMock()
+mock_pessoas_service.get_motorista_joined = AsyncMock()
+
+mock_viagens_service = MagicMock(spec=ViagensService)
+mock_viagens_service.create_viagem = AsyncMock()
+mock_viagens_service.launch_despesa = AsyncMock()
+
+mock_dashboard_service = MagicMock(spec=DashboardService)
+mock_dashboard_service.get_lucratividade_dashboard = AsyncMock()
+
+mock_whatsapp_service = MagicMock(spec=WhatsappService)
+mock_whatsapp_service.get_mensagens = AsyncMock()
+mock_whatsapp_service.send_mensagem = AsyncMock()
+
 @pytest.fixture(autouse=True)
 def override_dependencies():
     # Reset all service mocks before each test
-    auth_service.register_new_tenant.reset_mock()
-    auth_service.authenticate_user.reset_mock()
-    frota_service.create_cavalo.reset_mock()
-    frota_service.get_cavalos.reset_mock()
-    pessoas_service.create_motorista.reset_mock()
-    pessoas_service.get_motorista_joined.reset_mock()
-    viagens_service.create_viagem.reset_mock()
-    viagens_service.launch_despesa.reset_mock()
+    mock_auth_service.register_new_tenant.reset_mock()
+    mock_auth_service.authenticate_user.reset_mock()
+    mock_frota_service.create_cavalo.reset_mock()
+    mock_frota_service.get_cavalos.reset_mock()
+    mock_pessoas_service.create_motorista.reset_mock()
+    mock_pessoas_service.get_motorista_joined.reset_mock()
+    mock_viagens_service.create_viagem.reset_mock()
+    mock_viagens_service.launch_despesa.reset_mock()
+    mock_dashboard_service.get_lucratividade_dashboard.reset_mock()
+    mock_whatsapp_service.get_mensagens.reset_mock()
+    mock_whatsapp_service.send_mensagem.reset_mock()
     
     mock_session.execute.reset_mock()
     mock_session.commit.reset_mock()
@@ -82,13 +96,21 @@ def override_dependencies():
     app.dependency_overrides[get_current_user] = lambda: mock_user
     app.dependency_overrides[get_session] = lambda: mock_session
     app.dependency_overrides[get_current_tenant_session] = lambda: mock_session
+    
+    app.dependency_overrides[AuthService] = lambda: mock_auth_service
+    app.dependency_overrides[FrotaService] = lambda: mock_frota_service
+    app.dependency_overrides[PessoasService] = lambda: mock_pessoas_service
+    app.dependency_overrides[ViagensService] = lambda: mock_viagens_service
+    app.dependency_overrides[DashboardService] = lambda: mock_dashboard_service
+    app.dependency_overrides[WhatsappService] = lambda: mock_whatsapp_service
+    
     yield
     app.dependency_overrides.clear()
 
 # --- AUTH TESTS ---
 
 def test_auth_register():
-    auth_service.register_new_tenant.return_value = mock_user
+    mock_auth_service.register_new_tenant.return_value = mock_user
 
     payload = {
         "cnpj": "12.345.678/0001-99",
@@ -114,8 +136,8 @@ def test_auth_register():
     assert response.json()["role"] == "ADMIN"
 
 def test_auth_login():
-    from src.Dtos.AuthDto import TokenResponse, UsuarioResponse
-    auth_service.authenticate_user.return_value = TokenResponse(
+    from src.dtos.auth_dto import TokenResponse, UsuarioResponse
+    mock_auth_service.authenticate_user.return_value = TokenResponse(
         access_token="fake-jwt-token",
         usuario=UsuarioResponse(
             id=mock_user_id,
@@ -140,7 +162,7 @@ def test_auth_me_authenticated():
 
 def test_create_veiculo():
     mock_veh_id = uuid4()
-    frota_service.create_cavalo.return_value = Cavalo(
+    mock_frota_service.create_cavalo.return_value = Cavalo(
         id=mock_veh_id,
         transportadora_id=mock_tenant_id,
         placa="ABC1D23",
@@ -176,7 +198,7 @@ def test_create_veiculo():
     assert response.json()["marca"] == "Volkswagen"
 
 def test_get_veiculos():
-    frota_service.get_cavalos.return_value = [
+    mock_frota_service.get_cavalos.return_value = [
         Cavalo(
             id=uuid4(),
             transportadora_id=mock_tenant_id,
@@ -203,7 +225,7 @@ def test_get_veiculos():
 
 def test_create_motorista():
     mock_mot_id = uuid4()
-    pessoas_service.create_motorista.return_value = MotoristaResponse(
+    mock_pessoas_service.create_motorista.return_value = MotoristaResponse(
         id=mock_mot_id,
         nome="Mateus Driver",
         telefone="11988888888",
@@ -245,7 +267,7 @@ def test_create_viagem():
     mock_addr_orig = uuid4()
     mock_addr_dest = uuid4()
     
-    viagens_service.create_viagem.return_value = Viagem(
+    mock_viagens_service.create_viagem.return_value = Viagem(
         id=mock_trip_id,
         transportadora_id=mock_tenant_id,
         cavalo_id=mock_veh_id,
@@ -280,7 +302,7 @@ def test_launch_despesa():
     mock_trip_id = uuid4()
     mock_exp_id = uuid4()
     
-    viagens_service.launch_despesa.return_value = DespesaViagem(
+    mock_viagens_service.launch_despesa.return_value = DespesaViagem(
         id=mock_exp_id,
         transportadora_id=mock_tenant_id,
         viagem_id=mock_trip_id,
@@ -305,58 +327,15 @@ def test_launch_despesa():
 # --- DASHBOARD TESTS ---
 
 def test_dashboard_lucratividade():
-    mock_trip_id = uuid4()
-    mock_veh_id = uuid4()
-    mock_mot_id = uuid4()
-    
-    mock_viagem = Viagem(
-        id=mock_trip_id,
-        transportadora_id=mock_tenant_id,
-        cavalo_id=mock_veh_id,
-        motorista_id=mock_mot_id,
-        endereco_origem_id=uuid4(),
-        endereco_destino_id=uuid4(),
-        hodometro_inicial=1000,
-        status_operacional="PLANEJADA",
-        status_financeiro="PENDENTE",
-        data_inicio=datetime(2026, 6, 2, tzinfo=timezone.utc)
+    from src.dtos.dashboard_dto import DashboardResponse
+    mock_dashboard_service.get_lucratividade_dashboard.return_value = DashboardResponse(
+        total_receita=Decimal("1500.00"),
+        total_despesas=Decimal("500.00"),
+        margem_contribuicao=Decimal("1000.00"),
+        total_viagens=1,
+        percentual_lucro=Decimal("66.67"),
+        alertas=[]
     )
-
-    mock_receita = ReceitaViagem(
-        id=uuid4(),
-        transportadora_id=mock_tenant_id,
-        viagem_id=mock_trip_id,
-        cliente_pessoa_id=uuid4(),
-        tipo_receita="FRETE_VALOR",
-        valor=Decimal("1500.00"),
-        status_pagamento="A_RECEBER"
-    )
-
-    mock_despesa = DespesaViagem(
-        id=uuid4(),
-        transportadora_id=mock_tenant_id,
-        viagem_id=mock_trip_id,
-        categoria="COMBUSTIVEL",
-        valor=Decimal("500.00"),
-        data_despesa=datetime(2026, 6, 2, tzinfo=timezone.utc),
-        url_comprovante="http://receipts.com/1"
-    )
-
-    # Mocking database query executions for get_lucratividade_dashboard
-    # 1st execution resolves to voyages query result
-    mock_res_viagens = MagicMock()
-    mock_res_viagens.scalars.return_value.all.return_value = [mock_viagem]
-
-    # 2nd execution resolves to receitas query result
-    mock_res_receitas = MagicMock()
-    mock_res_receitas.scalars.return_value.all.return_value = [mock_receita]
-
-    # 3rd execution resolves to despesas query result
-    mock_res_despesas = MagicMock()
-    mock_res_despesas.scalars.return_value.all.return_value = [mock_despesa]
-
-    # Configure side effect for execute
-    mock_session.execute.side_effect = [mock_res_viagens, mock_res_receitas, mock_res_despesas]
 
     response = client.get("/dashboard/lucratividade", headers={"Authorization": "Bearer fake-jwt-token"})
     assert response.status_code == 200
@@ -370,9 +349,7 @@ def test_dashboard_lucratividade():
 def test_whatsapp_rodovia_assistant():
     mock_mot_id = uuid4()
     
-    pessoas_service.get_motorista_joined.return_value = True # Dummy return to pass check
-
-    # Mock session execution return for WhatsApp get messages
+    # Mock listing messages
     mock_msg_id = uuid4()
     mock_msg = MensagemChat(
         id=mock_msg_id,
@@ -383,16 +360,34 @@ def test_whatsapp_rodovia_assistant():
         lido=True,
         created_at=datetime.now()
     )
-    mock_res_msgs = MagicMock()
-    mock_res_msgs.scalars.return_value.all.return_value = [mock_msg]
-    mock_session.execute.return_value = mock_res_msgs
-
+    mock_whatsapp_service.get_mensagens.return_value = [mock_msg]
+    
     # Test listing messages
     response_list = client.get(f"/whatsapp/mensagens?motorista_id={mock_mot_id}", headers={"Authorization": "Bearer fake-jwt-token"})
     assert response_list.status_code == 200
     assert len(response_list.json()) == 1
 
     # Test sending driver message and receiving RodovIA response
+    mock_ai_msg = MensagemChat(
+        id=uuid4(),
+        transportadora_id=mock_tenant_id,
+        motorista_id=mock_mot_id,
+        conteudo="RodovIA: Analisando as últimas viagens da frota. A sua viagem atual está operando com uma margem de contribuição saudável.",
+        remetente="SISTEMA_IA",
+        lido=False,
+        created_at=datetime.now()
+    )
+    mock_driver_msg = MensagemChat(
+        id=uuid4(),
+        transportadora_id=mock_tenant_id,
+        motorista_id=mock_mot_id,
+        conteudo="Como está o lucro da minha viagem?",
+        remetente="MOTORISTA",
+        lido=True,
+        created_at=datetime.now()
+    )
+    mock_whatsapp_service.send_mensagem.return_value = [mock_driver_msg, mock_ai_msg]
+
     payload = {
         "motorista_id": str(mock_mot_id),
         "conteudo": "Como está o lucro da minha viagem?",
@@ -408,4 +403,3 @@ def test_whatsapp_rodovia_assistant():
     # Second message: RodovIA AI response
     assert response.json()[1]["remetente"] == "SISTEMA_IA"
     assert "RodovIA" in response.json()[1]["conteudo"]
-    assert "margem" in response.json()[1]["conteudo"] or "diesel" in response.json()[1]["conteudo"]

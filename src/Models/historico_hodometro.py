@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from sqlmodel import Field, SQLModel
-from src.Models.base_models import UUIDMixin
+from src.models.base_models import UUIDMixin
 
 class HistoricoHodometro(UUIDMixin, table=True):
     __tablename__ = "historico_hodometro"

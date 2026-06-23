@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 from sqlmodel import Field, SQLModel
-from src.Models.base_models import UUIDMixin
+from src.models.base_models import UUIDMixin
 
 class Fornecedor(UUIDMixin, table=True):
     __tablename__ = "fornecedor"

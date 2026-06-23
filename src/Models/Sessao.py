@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlmodel import Field, SQLModel
-from src.Models.base_models import UUIDMixin, TimestampMixin
+from src.models.base_models import UUIDMixin, TimestampMixin
 
 class Sessao(UUIDMixin, TimestampMixin, table=True):
     __tablename__ = "sessao"

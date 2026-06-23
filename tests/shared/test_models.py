@@ -1,9 +1,9 @@
 import pytest
 from pydantic import ValidationError
 from uuid import uuid4
-from src.Models.SharedModels import Endereco, Pessoa, PessoaFisica, PessoaJuridica, Transportadora
-from src.Models.Usuario import Usuario
-from src.Models.Sessao import Sessao
+from src.models.shared_models import Endereco, Pessoa, PessoaFisica, PessoaJuridica, Transportadora
+from src.models.usuario import Usuario
+from src.models.sessao import Sessao
 
 def test_endereco_validation():
     # Valid Endereco

@@ -10,8 +10,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 
 from src.core.config import settings
-from src.Models.Usuario import Usuario
-import src.Models  # Garante o registro de metadados de todas as tabelas
+from src.models.usuario import Usuario
+import src.models  # Garante o registro de metadados de todas as tabelas
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ async def seed_operational_data(session: AsyncSession, transportadora_id: UUID, 
     """Semeia dados operacionais de demonstração (caminhões, motoristas, viagens, custos, whatsapp)."""
     from datetime import datetime, timedelta
     from decimal import Decimal
-    from src.Models import Endereco, Pessoa, PessoaFisica, MotoristaPerfil, Cavalo, Implemento, Viagem, DespesaViagem, ReceitaViagem, MensagemChat
+    from src.models import Endereco, Pessoa, PessoaFisica, MotoristaPerfil, Cavalo, Implemento, Viagem, DespesaViagem, ReceitaViagem, MensagemChat
     
     logger.info("🌱 Semeando dados operacionais de teste...")
     try:
@@ -299,7 +299,7 @@ async def init_db() -> None:
         if not admin:
             logger.info("🌱 Semeando dados iniciais (admin@trecho.ai)...")
             from src.core.security import get_password_hash
-            from src.Models import Endereco, Pessoa, PessoaJuridica, Transportadora
+            from src.models import Endereco, Pessoa, PessoaJuridica, Transportadora
             
             try:
                 # 1. Endereço
@@ -365,8 +365,8 @@ async def init_db() -> None:
         else:
             logger.info("🌱 Usuário admin@trecho.ai já cadastrado. Verificando dados operacionais...")
             try:
-                from src.Models.MotoristaPerfil import MotoristaPerfil
-                from src.Models.SharedModels import Transportadora
+                from src.models.motorista_perfil import MotoristaPerfil
+                from src.models.shared_models import Transportadora
                 
                 query_mot = select(MotoristaPerfil).where(MotoristaPerfil.transportadora_id == admin.transportadora_id)
                 res_mot = await session.execute(query_mot)

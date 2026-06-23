@@ -11,16 +11,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from src.core.config import settings
-from src.DataContexts.DatabaseContext import init_db, close_db
+from src.data_contexts.database_context import init_db, close_db
 
 # Importar routers dos Controllers
-from src.Controllers.AuthController import router as auth_router
-from src.Controllers.FrotaController import router as frota_router
-from src.Controllers.PessoasController import router as pessoas_router
-from src.Controllers.ViagensController import router as viagens_router
-from src.Controllers.DashboardController import router as dashboard_router
-from src.Controllers.WhatsappController import router as whatsapp_router
-from src.Controllers.ViewController import router as view_router
+from src.controllers.auth_controller import router as auth_router
+from src.controllers.frota_controller import router as frota_router
+from src.controllers.pessoas_controller import router as pessoas_router
+from src.controllers.viagens_controller import router as viagens_router
+from src.controllers.dashboard_controller import router as dashboard_router
+from src.controllers.whatsapp_controller import router as whatsapp_router
+from src.controllers.view_controller import router as view_router
 
 # Configurar logging
 logging.basicConfig(

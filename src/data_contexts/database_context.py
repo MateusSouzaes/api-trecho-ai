@@ -57,8 +57,9 @@ async def seed_operational_data(session: AsyncSession, transportadora_id: UUID, 
     
     logger.info("🌱 Semeando dados operacionais de teste...")
     try:
-        # 1. Endereços adicionais para Rotas
+        # 1. Endereços adicionais para Rotas com UUIDs estáticos esperados pelo frontend
         end_origem = Endereco(
+            id=UUID("00000000-0000-0000-0000-000000000001"),
             cep="11015-002",
             logradouro="Avenida Portuária",
             numero="100",
@@ -67,6 +68,7 @@ async def seed_operational_data(session: AsyncSession, transportadora_id: UUID, 
             estado="SP"
         )
         end_destino = Endereco(
+            id=UUID("00000000-0000-0000-0000-000000000002"),
             cep="78740-022",
             logradouro="Rodovia BR-163",
             numero="KM 12",
@@ -76,6 +78,28 @@ async def seed_operational_data(session: AsyncSession, transportadora_id: UUID, 
         )
         session.add(end_origem)
         session.add(end_destino)
+        await session.flush()
+
+        # Seed dummy client expected by frontend for receitas
+        from src.models import PessoaJuridica
+        dummy_client = Pessoa(
+            id=UUID("00000000-0000-0000-0000-000000000003"),
+            tipo_pessoa="JURIDICA",
+            nome_razao_social="Cliente Padrão Trecho",
+            telefone="0000-0000",
+            email="cliente@trecho.ai",
+            endereco_id=end_origem.id
+        )
+        session.add(dummy_client)
+        await session.flush()
+
+        dummy_client_pj = PessoaJuridica(
+            pessoa_id=dummy_client.id,
+            cnpj="00000000000200",
+            nome_fantasia="Cliente Padrão",
+            inscricao_estadual="ISENTO"
+        )
+        session.add(dummy_client_pj)
         await session.flush()
         
         # 2. Motoristas (Pessoas Físicas)
@@ -274,6 +298,112 @@ async def seed_operational_data(session: AsyncSession, transportadora_id: UUID, 
         session.add(msg1)
         session.add(msg2)
         session.add(msg3)
+
+        # 8. Fornecedores (Parceiros)
+        from src.models.fornecedor import Fornecedor
+        p_posto = Pessoa(
+            tipo_pessoa="JURIDICA",
+            nome_razao_social="Posto Ipiranga Rota 163",
+            telefone="(66) 3555-1010",
+            email="financeiro@posto163.com.br",
+            endereco_id=end_destino.id
+        )
+        p_oficina = Pessoa(
+            tipo_pessoa="JURIDICA",
+            nome_razao_social="Oficina Multimarcas Diesel",
+            telefone="(66) 3555-2020",
+            email="contato@multimarcasdiesel.com",
+            endereco_id=end_destino.id
+        )
+        session.add(p_posto)
+        session.add(p_oficina)
+        await session.flush()
+
+        pj_posto = PessoaJuridica(
+            pessoa_id=p_posto.id,
+            cnpj="11111111000199",
+            nome_fantasia="Posto Rota 163"
+        )
+        pj_oficina = PessoaJuridica(
+            pessoa_id=p_oficina.id,
+            cnpj="22222222000188",
+            nome_fantasia="Oficina Diesel"
+        )
+        session.add(pj_posto)
+        session.add(pj_oficina)
+        await session.flush()
+
+        forn_posto = Fornecedor(
+            transportadora_id=transportadora_id,
+            pessoa_id=p_posto.id,
+            categoria="POSTO_COMBUSTIVEL",
+            status="ATIVO"
+        )
+        forn_oficina = Fornecedor(
+            transportadora_id=transportadora_id,
+            pessoa_id=p_oficina.id,
+            categoria="OFICINA",
+            status="ATIVO"
+        )
+        session.add(forn_posto)
+        session.add(forn_oficina)
+        await session.flush()
+
+        # 9. Pneus
+        from src.models.pneu import Pneu
+        pneu1 = Pneu(
+            transportadora_id=transportadora_id,
+            numero_fogo=f"PN-{transportadora_id.hex[:4]}-001",
+            marca="Michelin",
+            dimensao="295/80 R22.5",
+            status_uso="ESTOQUE",
+            sulco_atual_mm=Decimal("12.5"),
+            quilometragem_acumulada=0
+        )
+        pneu2 = Pneu(
+            transportadora_id=transportadora_id,
+            numero_fogo=f"PN-{transportadora_id.hex[:4]}-002",
+            marca="Bridgestone",
+            dimensao="295/80 R22.5",
+            status_uso="USO",
+            sulco_atual_mm=Decimal("9.0"),
+            quilometragem_acumulada=15000,
+            cavalo_atual_id=cavalo_volvo.id,
+            eixo_atual=1,
+            posicao_atual="DIANTEIRA_ESQUERDA"
+        )
+        session.add(pneu1)
+        session.add(pneu2)
+        await session.flush()
+
+        # 10. Abastecimentos
+        from src.models.abastecimento import Abastecimento
+        ab1 = Abastecimento(
+            transportadora_id=transportadora_id,
+            cavalo_id=cavalo_volvo.id,
+            fornecedor_id=forn_posto.id,
+            viagem_id=viagem_rota.id,
+            data_abastecimento=datetime.now() - timedelta(hours=3),
+            hodometro_veiculo=124100,
+            tipo_combustivel="DIESEL_S10",
+            quantidade_litros=Decimal("450.500"),
+            valor_unitario_litro=Decimal("5.890")
+        )
+        session.add(ab1)
+
+        # 11. Ordens de Serviço (Manutenção)
+        from src.models.ordem_servico import OrdemServico
+        os1 = OrdemServico(
+            transportadora_id=transportadora_id,
+            fornecedor_id=forn_oficina.id,
+            cavalo_id=cavalo_scania.id,
+            tipo_manutencao="CORRETIVA",
+            hodometro_veiculo=239500,
+            valor_total_pecas=Decimal("1200.00"),
+            valor_total_mao_obra=Decimal("800.00"),
+            data_abertura=datetime.now() - timedelta(days=2)
+        )
+        session.add(os1)
         
         await session.commit()
         logger.info("🌱 Seed operacional de teste concluído com sucesso!")

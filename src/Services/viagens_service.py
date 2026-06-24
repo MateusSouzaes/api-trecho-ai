@@ -63,6 +63,30 @@ class ViagensService:
             status_financeiro=data.status_financeiro or "PENDENTE"
         )
         self.session.add(viagem)
+        await self.session.flush()
+
+        # 4. Vincular implementos
+        if data.implemento_ids:
+            from src.models.implemento import Implemento
+            from src.models.viagem_implemento import ViagemImplemento
+            for idx, imp_id in enumerate(data.implemento_ids):
+                query_imp = select(Implemento).where(
+                    Implemento.id == imp_id,
+                    Implemento.transportadora_id == transportadora_id
+                )
+                res_imp = await self.session.execute(query_imp)
+                if not res_imp.scalar_one_or_none():
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Implemento {imp_id} não encontrado."
+                    )
+                viagem_imp = ViagemImplemento(
+                    viagem_id=viagem.id,
+                    implemento_id=imp_id,
+                    ordem_engate=idx + 1
+                )
+                self.session.add(viagem_imp)
+
         await self.session.commit()
         await self.session.refresh(viagem)
         return viagem

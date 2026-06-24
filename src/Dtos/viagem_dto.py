@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime
 from uuid import UUID
@@ -13,6 +13,7 @@ class ViagemCreate(BaseModel):
     hodometro_inicial: int = Field(..., ge=0)
     status_operacional: Optional[str] = Field("PLANEJADA", max_length=30)
     status_financeiro: Optional[str] = Field("PENDENTE", max_length=30)
+    implemento_ids: Optional[List[UUID]] = None
 
 class ViagemUpdate(BaseModel):
     data_fim: Optional[datetime] = None

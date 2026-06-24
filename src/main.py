@@ -21,6 +21,10 @@ from src.controllers.viagens_controller import router as viagens_router
 from src.controllers.dashboard_controller import router as dashboard_router
 from src.controllers.whatsapp_controller import router as whatsapp_router
 from src.controllers.view_controller import router as view_router
+from src.controllers.fornecedor_controller import router as fornecedor_router
+from src.controllers.abastecimento_controller import router as abastecimento_router
+from src.controllers.ordem_servico_controller import router as ordem_servico_router
+from src.controllers.pneu_controller import router as pneu_router
 
 # Configurar logging
 logging.basicConfig(
@@ -94,6 +98,10 @@ app.include_router(pessoas_router)
 app.include_router(viagens_router)
 app.include_router(dashboard_router)
 app.include_router(whatsapp_router)
+app.include_router(fornecedor_router)
+app.include_router(abastecimento_router)
+app.include_router(ordem_servico_router)
+app.include_router(pneu_router)
 app.include_router(view_router)
 
 

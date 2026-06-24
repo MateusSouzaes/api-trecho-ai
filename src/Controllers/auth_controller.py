@@ -19,6 +19,8 @@ async def register(
     usuario = await auth_service.register_new_tenant(data)
     return UsuarioResponse.model_validate(usuario)
 
+from fastapi.security import OAuth2PasswordRequestForm
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     data: LoginRequest,
@@ -28,6 +30,18 @@ async def login(
     Realiza o login de um usuário e gera um token JWT de acesso.
     """
     token_resp = await auth_service.authenticate_user(data)
+    return token_resp
+
+@router.post("/token", response_model=TokenResponse)
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    auth_service: AuthService = Depends()
+):
+    """
+    Realiza o login compatível com o fluxo de formulário OAuth2 Password (Swagger UI).
+    """
+    login_data = LoginRequest(email=form_data.username, password=form_data.password)
+    token_resp = await auth_service.authenticate_user(login_data)
     return token_resp
 
 @router.get("/me", response_model=UsuarioResponse)

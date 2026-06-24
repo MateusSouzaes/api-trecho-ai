@@ -515,7 +515,7 @@ async def close_db() -> None:
     logger.info("✅ Conexão com banco fechada")
 
 # Configura o fluxo de token OAuth2
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,

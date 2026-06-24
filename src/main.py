@@ -1,8 +1,3 @@
-"""
-Ponto de entrada da aplicação FastAPI.
-Inicializa a aplicação, define middlewares e agrupa os routers.
-"""
-
 import logging
 from contextlib import asynccontextmanager
 
@@ -13,7 +8,6 @@ from fastapi.responses import RedirectResponse
 from src.core.config import settings
 from src.data_contexts.database_context import init_db, close_db
 
-# Importar routers dos Controllers
 from src.controllers.auth_controller import router as auth_router
 from src.controllers.frota_controller import router as frota_router
 from src.controllers.pessoas_controller import router as pessoas_router
@@ -36,17 +30,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Gerencia o ciclo de vida da aplicação.
-    - Startup: Inicializa o banco de dados
-    - Shutdown: Fecha a conexão com o banco
-    """
-    # STARTUP
-    logger.info("🚀 Iniciando Trecho.ai API...")
+  
+    logger.info(" Iniciando Trecho.ai API...")
     await init_db()
-    logger.info("✅ API iniciada com sucesso!")
-    
-    # Obter a porta dinamicamente para mostrar o link clicável
+    logger.info(" API iniciada com sucesso!")
+
     import sys
     port = 8000
     for i, arg in enumerate(sys.argv):
@@ -61,15 +49,14 @@ async def lifespan(app: FastAPI):
             except ValueError:
                 pass
     
-    # Imprimir o link clicável no terminal
     print(f"\n[API] Acesse a API e a documentacao em: http://localhost:{port}\n")
     
     yield
     
     # SHUTDOWN
-    logger.info("🛑 Encerrando Trecho.ai API...")
+    logger.info(" Encerrando Trecho.ai API...")
     await close_db()
-    logger.info("✅ API encerrada")
+    logger.info("API encerrada")
 
 
 # Criar aplicação FastAPI
